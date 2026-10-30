@@ -13,18 +13,25 @@ Contraintes : L’application utilise HTML, CSS et JavaScript, sans framework, s
 Format : Fais une liste numérotée. Chaque story doit suivre la formule « En tant que…, je veux…, afin de… ».
 Exemple : « En tant qu’utilisateur, je veux marquer une tâche comme terminée afin de voir ce qu’il me reste à faire. » Termine en indiquant les points à préciser avec nous.
 
-**Gardé :**
+**Gardé :** Rôle : Tu es un développeur web qui aide des étudiants de première année à cadrer leur projet.
+Contexte : Nous créons en binôme TaskFlow, une petite application web de gestion de tâches.
+Tâche : Propose 5 à 8 user stories couvrant les fonctions essentielles de TaskFlow.
+Contraintes : L’application utilise HTML, CSS et JavaScript, sans framework, serveur ni base de données. Les tâches sont sauvegardées avec localStorage. Rédige des besoins réalisables à notre niveau, sans proposer de code.
+Format : Fais une liste numérotée. Chaque story doit suivre la formule « En tant que…, je veux…, afin de… ».
+Exemple : « En tant qu’utilisateur, je veux marquer une tâche comme terminée afin de voir ce qu’il me reste à faire. » 
+Termine en indiquant les points à préciser avec nous.
 
-**Rejeté :**
+**Rejeté :** l'en-tête : Voici un prompt construit avec les six éléments de la page 23. Remplace [ma filière et sa fonctionnalité] avant de l’envoyer à l’IA. 
+Ainsi que toute mention de la filière.
 
-**Pourquoi :** La réponse ne nous à pas totalement convenu. Dans le prompt, il est toujours question de choisir sa filière ce qui est finalemant inutile.
+**Pourquoi :** La réponse ne nous à pas totalement convenu. Dans le prompt, il est toujours question de choisir sa filière ce qui est finalemant inutile. Il a aussi fallu enlever l'en-tête qu'il ne faut pas communiquer dans le prompt suivant.
 
 
-## Prompt 2 : envoie du prompt optimal 
+## Prompt 2 : envoie du prompt optimal / création des user stories
 
 **Prompt :** Rôle : Tu es un développeur web qui aide des étudiants de première année à cadrer leur projet.
 Contexte : Nous créons en binôme TaskFlow, une petite application web de gestion de tâches.
-Tâche : Propose 5 à 8 user stories couvrant les fonctions essentielles de TaskFlow et notre fonctionnalité de filière.
+Tâche : Propose 5 à 8 user stories couvrant les fonctions essentielles de TaskFlow.
 Contraintes : L’application utilise HTML, CSS et JavaScript, sans framework, serveur ni base de données. Les tâches sont sauvegardées avec localStorage. Rédige des besoins réalisables à notre niveau, sans proposer de code.
 Format : Fais une liste numérotée. Chaque story doit suivre la formule « En tant que…, je veux…, afin de… ».
 Exemple : « En tant qu’utilisateur, je veux marquer une tâche comme terminée afin de voir ce qu’il me reste à faire. » Termine en indiquant les points à préciser avec nous.
@@ -37,8 +44,6 @@ Exemple : « En tant qu’utilisateur, je veux marquer une tâche comme terminé
 >5. En tant qu’utilisateur, je veux marquer une tâche comme terminée afin de distinguer le travail fait du travail restant.
 >6. En tant qu’utilisateur, je veux supprimer une tâche afin de retirer de ma liste ce dont je n’ai plus besoin.
 >7. En tant qu’utilisateur, je veux retrouver mes tâches après avoir fermé le navigateur afin de conserver ma liste.
-
->**Point à préciser avec vous :** le prompt demande une story pour votre fonctionnalité de filière, mais ne dit pas laquelle vous avez choisie. Je ne peux donc pas la formuler précisément. Les sept stories ci-dessus couvrent les fonctions essentielles ; il reste une place pour ajouter celle de votre filière tout en respectant la limite de huit.
 
 
 **Gardé :**
