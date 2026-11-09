@@ -308,7 +308,6 @@ Le titre vide est refusé, les échéances s’affichent en `jj/mm/aaaa`, et cha
 
 Je n’ai pas touché à `PROMPTS.md`, qui contenait déjà tes modifications. Message de commit proposé : `Sprint 1 : ajouter les fonctions de base de TaskFlow`.
 
-Le service local `remove-ai-marks` était indisponible ; je ne peux donc pas confirmer un nettoyage des nouveaux fichiers par ce service.
 ```
 
 ## Prompt 7 : envoie du prompt optimal 
@@ -334,4 +333,62 @@ La validation refuse une échéance passée. **Vérifications effectuées :** sy
 
 Le service local `remove-ai-marks` était indisponible ; je ne peux pas confirmer son nettoyage des fichiers.
 
+```
+
+## Prompt 8 : rajout des features de la licence Cyber
+
+**Prompt :** met en pause la migration vers ios pour l'instant, concentrons nous sur le sprint 3, ne rajoute plus le dossier ios dans tes commits, je ne le veux pas dans mon git. Je dois maintenant adapter cette application pour pouvoir afficher un écran de connexion avant d'accéder aux tâches. Je modifierai le style de cette fenêtre plus tard ce n'est pas important pour l'instant mais reste logique avec la DA déjà présente dans le reste de l'application. Pour la vérification de l'utilisateur maintenant : l'utilisateur doit entrer un pseudonyme (tous les caractères, chiffres et caractères spéciaux compris) et un mot de passe. Le mot de passe doit faire minimum 8 caractères, maximum 64, contenir tous les caractères majuscules, minuscules, chiffre et caractère spécial. Juge ensuite la qualité du mot de passe grâce aux recommandations de l'ANSSI et CISA pour afficher à l'utilisateur si le mot de passe qu'il choisit est faible, moyen et fort avec le mot affiché en couleur : rouge pour faible, orange pour moyen et vert pour fort. Enfin, après avoir tout effectué, rajoute une feature qui permet de bloquer l'accès au compte après 3 tentatives échouées. Un timer se lance, comme sur un iPhone : à la 3e ratée 5min d'attentes puis, 4e 10min, 5e 20min, 6e 40 puis etc en doublant le temps à chaque fois.
+
+
+**Résultat :** 
+```
+Le **sprint 3 est codé et enregistré** dans le commit `b203ebf`. [TaskFlow](<~VS/Outils IA/Taskflow/index.html>) affiche désormais une création de compte au premier lancement, puis une connexion avant l’accès aux tâches.
+
+Le pseudonyme accepte les caractères spéciaux. Le mot de passe doit contenir **8 à 64 caractères**, avec majuscule, minuscule, chiffre et caractère spécial. La jauge rouge, orange ou verte est une **estimation** : elle tient compte de la longueur et de quelques suites prévisibles. J’ai réservé « fort » aux mots de passe d’au moins 16 caractères, conformément au conseil de longueur de la [CISA](https://www.cisa.gov/sites/default/files/2024-09/Secure-Our-World-Passwords-Tip-Sheet.pdf). Le minimum de 8 caractères vient de ta consigne ; il est inférieur au minimum de 9 caractères indiqué par l’[ANSSI pour un service peu critique](https://messervices.cyber.gouv.fr/documents-guides/20241212_np_anssi_guide_tpe-pme_v2.pdf).
+
+Les tâches sont chiffrées localement à partir du mot de passe. Après **3 échecs**, la connexion attend 5 minutes ; les échecs suivants portent l’attente à 10, 20, 40 minutes, etc. Une connexion réussie remet le compteur à zéro. Ce blocage local peut être contourné par une personne qui contrôle le navigateur : il ne convient pas à un service en ligne. Sans serveur, il n’y a pas non plus de récupération du mot de passe.
+
+Les règles, le chiffrement et les délais ont été testés par code ; **l’interface n’a pas été testée dans un navigateur**. Le dossier `ios/` est ignoré par Git et ne figure pas dans le commit. La modification préexistante de `.DS_Store` a aussi été laissée de côté.
+
+```
+
+## Prompt 9 : Précision sur le prompt précédent
+
+**Prompt :** maintenant, dans cette fenêtre de connexion, je veux que tu affiches la qualité du mot de passe en même temps que l'utilisateur l'écrit car pour le moment, quoique le mot de passe soit il y a écrit : faible. Rajoute également une liste des types de caractères que l'ont doit utiliser et lorsque l'utilisateur s'en sert, coche en vert le type de caractère utilisé. Rajoute enfin une feature qui permet de voir son mot de passe (le démasquer lorsqu'on écrit) et une autre feature pour pouvoir retrouver son compte si on oublie son mot de passe.
+
+
+**Résultat :** 
+```
+C’est fait dans le commit `be4437e`.
+
+Dans la fenêtre de connexion, la **qualité estimée du mot de passe** change pendant la saisie. Les cinq critères se cochent en vert dès qu’ils sont remplis, et le bouton **Afficher / Masquer** permet de voir ce que l’on écrit. Les changements sont dans [index.html](</Users/thomas/Documents/VS/Outils IA/Taskflow/index.html>), [style.css](</Users/thomas/Documents/VS/Outils IA/Taskflow/style.css>) et [app.js](</Users/thomas/Documents/VS/Outils IA/Taskflow/app.js>).
+
+J’ai aussi ajouté **« Mot de passe oublié ? »**. Un code de récupération est montré une seule fois à la création du compte ; un compte déjà créé le recevra à sa prochaine connexion réussie. Avec ce code, l’utilisateur peut choisir un nouveau mot de passe. L’ancien code est alors remplacé, conformément au principe de rotation des codes de récupération décrit par l’[OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html). **Il faut conserver le code hors de TaskFlow** : sans mot de passe ni code, les tâches chiffrées ne sont pas récupérables.
+
+Les règles, le chiffrement, la récupération et le remplacement du code ont été testés par code. L’interface n’a pas été testée dans un navigateur. J’ai laissé ta modification de `PROMPTS.md` intacte.
+```
+
+## Prompt 10 & 11 : Fin du prompt du Sprint 3 Cyber
+
+**Prompt 10:** toutes les features sont bonnes sauf la barre qui affiche la qualité du mot de passe elle reste figée sur "faible" couple la avec la liste de caractères : de 0 à 2 case cochée = faible, 3 à 4 = moyen et 5 = fort
+
+**Prompt 11 :** rajoute une option dans la première fenêtre qui permet de créer un compte et déconnecte moi pour que je puisse essayer de créer un compte
+
+
+**Résultat 1:** 
+```
+C’est fait dans le commit `be4437e`.
+
+Dans la fenêtre de connexion, la **qualité estimée du mot de passe** change pendant la saisie. Les cinq critères se cochent en vert dès qu’ils sont remplis, et le bouton **Afficher / Masquer** permet de voir ce que l’on écrit. Les changements sont dans [index.html](</Users/thomas/Documents/VS/Outils IA/Taskflow/index.html>), [style.css](</Users/thomas/Documents/VS/Outils IA/Taskflow/style.css>) et [app.js](</Users/thomas/Documents/VS/Outils IA/Taskflow/app.js>).
+
+J’ai aussi ajouté **« Mot de passe oublié ? »**. Un code de récupération est montré une seule fois à la création du compte ; un compte déjà créé le recevra à sa prochaine connexion réussie. Avec ce code, l’utilisateur peut choisir un nouveau mot de passe. L’ancien code est alors remplacé, conformément au principe de rotation des codes de récupération décrit par l’[OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html). **Il faut conserver le code hors de TaskFlow** : sans mot de passe ni code, les tâches chiffrées ne sont pas récupérables.
+
+Les règles, le chiffrement, la récupération et le remplacement du code ont été testés par code. L’interface n’a pas été testée dans un navigateur. J’ai laissé ta modification de `PROMPTS.md` intacte. 
+```
+
+**Résultat 2:**
+```
+J’ai ajouté **« Créer un compte »** sur l’écran de connexion. Un nouveau compte conserve ses propres tâches sans effacer celles du compte existant. J’ai vérifié la syntaxe JavaScript et la lecture des deux comptes locaux.
+
+L’application revient désormais à la connexion après une actualisation. **Je ne peux pas fermer la session déjà ouverte dans ton onglet depuis les fichiers du projet** : clique sur « Se déconnecter », ou actualise la page, puis choisis « Créer un compte » pour faire ton essai.
 ```

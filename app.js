@@ -114,6 +114,7 @@ const recoveryCodeInput = document.querySelector('#recovery-code-input');
 
 const storageKey = 'taskflow-v2';
 const accountStorageKey = 'taskflow-account-v1';
+const accountPrefix = `${accountStorageKey}:`;
 const priorityLabels = {
   pas_urgent: 'Pas urgent',
   moyennement_urgent: 'Moyennement urgent',
@@ -134,6 +135,7 @@ let view = 'all';
 let calendarTarget = null;
 let calendarMonth = new Date();
 let account = null;
+let activeAccountKey = null;
 let encryptionKey = null;
 let saveQueue = Promise.resolve();
 let authMode = 'register';
@@ -177,7 +179,7 @@ function save() {
     if (!encryptionKey || !account) return false;
     const encrypted = await TaskFlowSecurity.encrypt(encryptionKey, snapshot);
     account.data = encrypted;
-    localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    persistAccount();
     return true;
   }).catch(() => {
     message.textContent = "Impossible d'enregistrer sur cet appareil. Vérifie l'espace disponible dans le navigateur.";
@@ -479,6 +481,65 @@ function maskPassword() {
   toggle.setAttribute('aria-pressed', 'false');
 }
 
+function accountKey(username) {
+  return `${accountPrefix}${encodeURIComponent(username)}`;
+}
+
+function readAccount(username) {
+  const keyed = localStorage.getItem(accountKey(username));
+  const legacy = localStorage.getItem(accountStorageKey);
+  const raw = keyed || (legacy && JSON.parse(legacy).username === username ? legacy : null);
+  if (!raw) return null;
+  const parsed = JSON.parse(raw);
+  if (typeof parsed.username !== 'string' || !parsed.salt || !parsed.data ||
+      (parsed.version === 2 && (!parsed.wrappedKey || !parsed.recovery))) throw new Error('Compte invalide');
+  parsed.failedAttempts = Number.isInteger(parsed.failedAttempts) ? parsed.failedAttempts : 0;
+  parsed.lockedUntil = Number.isFinite(parsed.lockedUntil) ? parsed.lockedUntil : 0;
+  return { value: parsed, key: keyed ? accountKey(username) : accountStorageKey };
+}
+
+function persistAccount() {
+  localStorage.setItem(activeAccountKey, JSON.stringify(account));
+}
+
+function selectAccount() {
+  if (authMode === 'register' || authMode === 'notice') return;
+  try {
+    const selected = readAccount(authUsername.value);
+    account = selected?.value || null;
+    activeAccountKey = selected?.key || null;
+    updateLockout();
+  } catch (error) {
+    account = null;
+    activeAccountKey = null;
+    authSubmit.disabled = true;
+    authMessage.textContent = 'Le compte local est illisible. Les données existantes ont été conservées.';
+  }
+}
+
+function showRegister() {
+  authMode = 'register';
+  account = null;
+  activeAccountKey = null;
+  authForm.hidden = false;
+  document.querySelector('#recovery-notice').hidden = true;
+  document.querySelector('#auth-heading').textContent = 'Créer un compte';
+  document.querySelector('#auth-intro').textContent = 'Choisis un pseudonyme et un mot de passe pour protéger tes tâches sur cet appareil.';
+  document.querySelector('#auth-password-label').textContent = 'Mot de passe';
+  document.querySelector('#recovery-code-field').hidden = true;
+  document.querySelector('#forgot-password').hidden = true;
+  document.querySelector('#create-account').hidden = true;
+  document.querySelector('#back-to-login').hidden = false;
+  authPassword.autocomplete = 'new-password';
+  authSubmit.textContent = 'Créer le compte';
+  authUsername.value = '';
+  authPassword.value = '';
+  maskPassword();
+  authMessage.textContent = '';
+  updateStrength();
+  updateLockout();
+}
+
 function showLogin() {
   authMode = 'login';
   authScreen.hidden = false;
@@ -490,6 +551,7 @@ function showLogin() {
   document.querySelector('#auth-password-label').textContent = 'Mot de passe';
   document.querySelector('#recovery-code-field').hidden = true;
   document.querySelector('#forgot-password').hidden = false;
+  document.querySelector('#create-account').hidden = false;
   document.querySelector('#back-to-login').hidden = true;
   authPassword.autocomplete = 'current-password';
   authSubmit.textContent = 'Se connecter';
@@ -498,16 +560,20 @@ function showLogin() {
   recoveryCodeInput.value = '';
   authMessage.textContent = '';
   updateStrength();
+  selectAccount();
   updateLockout();
 }
 
 function showRecovery() {
+  selectAccount();
+  if (!account) { authMessage.textContent = 'Saisis le pseudonyme du compte à récupérer.'; return; }
   authMode = 'recovery';
   document.querySelector('#auth-heading').textContent = 'Retrouver mon compte';
   document.querySelector('#auth-intro').textContent = 'Entre le code de récupération conservé lors de la création du compte, puis choisis un nouveau mot de passe.';
   document.querySelector('#auth-password-label').textContent = 'Nouveau mot de passe';
   document.querySelector('#recovery-code-field').hidden = false;
   document.querySelector('#forgot-password').hidden = true;
+  document.querySelector('#create-account').hidden = true;
   document.querySelector('#back-to-login').hidden = false;
   authPassword.autocomplete = 'new-password';
   authPassword.value = '';
@@ -547,7 +613,7 @@ function updateStrength() {
 }
 
 function updateLockout() {
-  if (!account) { authSubmit.disabled = authBusy; return; }
+  if (!account || authMode === 'register') { authSubmit.disabled = authBusy; return; }
   const remaining = Math.max(0, account.lockedUntil - Date.now());
   authSubmit.disabled = remaining > 0 || authBusy || (authMode === 'recovery' && !account.recovery);
   if (remaining > 0) {
@@ -557,7 +623,7 @@ function updateLockout() {
     if (authMode !== 'notice') authMessage.textContent = `Compte temporairement bloqué. Réessaie dans ${minutes}:${seconds}.`;
   } else if (account.lockedUntil) {
     account.lockedUntil = 0;
-    localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    persistAccount();
     authMessage.textContent = 'Tu peux réessayer de te connecter.';
   }
 }
@@ -566,27 +632,35 @@ function recordFailure() {
   account.failedAttempts += 1;
   const minutes = TaskFlowSecurity.lockoutMinutes(account.failedAttempts);
   if (minutes) account.lockedUntil = Date.now() + minutes * 60_000;
-  localStorage.setItem(accountStorageKey, JSON.stringify(account));
+  persistAccount();
   authMessage.textContent = 'Pseudonyme ou mot de passe incorrect.';
   updateLockout();
 }
 
 async function createAccount(username, password) {
   if (!username.trim()) { authMessage.textContent = 'Saisis un pseudonyme.'; return; }
+  if (readAccount(username)) { authMessage.textContent = 'Ce pseudonyme est déjà utilisé sur cet appareil.'; return; }
   const rules = TaskFlowSecurity.passwordRules(password);
   if (!Object.values(rules).every(Boolean)) {
     authMessage.textContent = 'Le mot de passe doit contenir 8 à 64 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
     return;
   }
   const legacy = localStorage.getItem(storageKey);
-  if (legacy) load(JSON.parse(legacy));
+  tasks = [];
+  trash = [];
+  nextId = 1;
+  nextCompletionOrder = 1;
+  const importLegacy = legacy && !localStorage.getItem(accountStorageKey) &&
+    !Object.keys(localStorage).some((key) => key.startsWith(accountPrefix));
+  if (importLegacy) load(JSON.parse(legacy));
   const master = await TaskFlowSecurity.newMasterKey();
   const passwordWrapper = await TaskFlowSecurity.wrapMaster(password, master.raw);
   const recovery = await TaskFlowSecurity.createRecovery(master.raw);
   const data = await TaskFlowSecurity.encrypt(master.key, { tasks, trash });
   const createdAccount = { version: 2, username, ...passwordWrapper, recovery: recovery.wrapper, data, failedAttempts: 0, lockedUntil: 0 };
-  localStorage.setItem(accountStorageKey, JSON.stringify(createdAccount));
-  if (legacy) localStorage.removeItem(storageKey);
+  activeAccountKey = accountKey(username);
+  localStorage.setItem(activeAccountKey, JSON.stringify(createdAccount));
+  if (importLegacy) localStorage.removeItem(storageKey);
   account = createdAccount;
   encryptionKey = master.key;
   showRecoveryNotice(recovery.code, 'app');
@@ -609,7 +683,7 @@ async function login(username, password) {
       const passwordWrapper = await TaskFlowSecurity.wrapMaster(password, master.raw);
       const recovery = await TaskFlowSecurity.createRecovery(master.raw);
       const migrated = { ...account, version: 2, ...passwordWrapper, recovery: recovery.wrapper, data: await TaskFlowSecurity.encrypt(master.key, data) };
-      localStorage.setItem(accountStorageKey, JSON.stringify(migrated));
+      localStorage.setItem(activeAccountKey, JSON.stringify(migrated));
       account = migrated;
       key = master.key;
       recoveryCode = recovery.code;
@@ -622,7 +696,7 @@ async function login(username, password) {
   load(data);
   account.failedAttempts = 0;
   account.lockedUntil = 0;
-  localStorage.setItem(accountStorageKey, JSON.stringify(account));
+  persistAccount();
   authMessage.textContent = '';
   if (recoveryCode) showRecoveryNotice(recoveryCode, 'app');
   else showApp();
@@ -649,14 +723,14 @@ async function recoverAccount(username, code, newPassword) {
   const passwordWrapper = await TaskFlowSecurity.wrapMaster(newPassword, master.raw);
   const recovery = await TaskFlowSecurity.createRecovery(master.raw);
   const updated = { ...account, ...passwordWrapper, recovery: recovery.wrapper, failedAttempts: 0, lockedUntil: 0 };
-  localStorage.setItem(accountStorageKey, JSON.stringify(updated));
+  localStorage.setItem(activeAccountKey, JSON.stringify(updated));
   account = updated;
   recoveryCodeInput.value = '';
   showRecoveryNotice(recovery.code, 'login');
 }
 
 authPassword.addEventListener('input', updateStrength);
-authUsername.addEventListener('input', updateStrength);
+authUsername.addEventListener('input', () => { updateStrength(); selectAccount(); });
 document.querySelector('#toggle-password').addEventListener('click', () => {
   const visible = authPassword.type === 'password';
   authPassword.type = visible ? 'text' : 'password';
@@ -667,6 +741,7 @@ document.querySelector('#toggle-password').addEventListener('click', () => {
   authPassword.focus();
 });
 document.querySelector('#forgot-password').addEventListener('click', showRecovery);
+document.querySelector('#create-account').addEventListener('click', showRegister);
 document.querySelector('#back-to-login').addEventListener('click', showLogin);
 document.querySelector('#recovery-notice-done').addEventListener('click', () => {
   document.querySelector('#recovery-code-display').textContent = '';
@@ -683,8 +758,9 @@ authForm.addEventListener('submit', async (event) => {
   authMessage.textContent = '';
   try {
     if (authMode === 'recovery') await recoverAccount(username, recoveryCodeInput.value, password);
+    else if (authMode === 'register') await createAccount(username, password);
     else if (account) await login(username, password);
-    else await createAccount(username, password);
+    else authMessage.textContent = 'Pseudonyme ou mot de passe incorrect.';
   } catch (error) {
     authMessage.textContent = 'Impossible de traiter le compte sur cet appareil. Vérifie que le stockage local est disponible.';
   } finally {
@@ -698,6 +774,8 @@ authForm.addEventListener('submit', async (event) => {
 document.querySelector('#logout').addEventListener('click', async () => {
   await saveQueue;
   encryptionKey = null;
+  account = null;
+  activeAccountKey = null;
   tasks = [];
   trash = [];
   closeCalendar();
@@ -707,12 +785,8 @@ document.querySelector('#logout').addEventListener('click', async () => {
 
 try {
   const rawAccount = localStorage.getItem(accountStorageKey);
-  if (rawAccount) {
-    account = JSON.parse(rawAccount);
-    if (typeof account.username !== 'string' || !account.salt || !account.data) throw new Error('Compte invalide');
-    if (account.version === 2 && (!account.wrappedKey || !account.recovery)) throw new Error('Compte invalide');
-    account.failedAttempts = Number.isInteger(account.failedAttempts) ? account.failedAttempts : 0;
-    account.lockedUntil = Number.isFinite(account.lockedUntil) ? account.lockedUntil : 0;
+  if (rawAccount || Object.keys(localStorage).some((key) => key.startsWith(accountPrefix))) {
+    if (rawAccount) authUsername.value = JSON.parse(rawAccount).username;
     showLogin();
   }
 } catch (error) {
