@@ -58,11 +58,43 @@ const TaskFlowSecurity = (() => {
     return JSON.parse(new TextDecoder().decode(plaintext));
   }
 
+  async function importMasterKey(raw) {
+    return crypto.subtle.importKey('raw', fromBase64(raw), 'AES-GCM', false, ['encrypt', 'decrypt']);
+  }
+
+  async function newMasterKey() {
+    const raw = toBase64(crypto.getRandomValues(new Uint8Array(32)));
+    return { raw, key: await importMasterKey(raw) };
+  }
+
+  async function wrapMaster(password, raw) {
+    const salt = toBase64(crypto.getRandomValues(new Uint8Array(16)));
+    const key = await deriveKey(password, salt);
+    return { salt, wrappedKey: await encrypt(key, { master: raw }) };
+  }
+
+  async function unwrapMaster(password, wrapper) {
+    const key = await deriveKey(password, wrapper.salt);
+    const result = await decrypt(key, wrapper.wrappedKey);
+    return { raw: result.master, key: await importMasterKey(result.master) };
+  }
+
+  function normalizeRecoveryCode(code) {
+    return code.replace(/[\s-]/g, '').toUpperCase();
+  }
+
+  async function createRecovery(raw) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    const code = hex.match(/.{1,4}/g).join('-');
+    return { code, wrapper: await wrapMaster(hex, raw) };
+  }
+
   function lockoutMinutes(failures) {
     return failures < 3 ? 0 : 5 * 2 ** (failures - 3);
   }
 
-  return { passwordRules, assessPassword, toBase64, deriveKey, encrypt, decrypt, lockoutMinutes };
+  return { passwordRules, assessPassword, toBase64, deriveKey, encrypt, decrypt, newMasterKey, wrapMaster, unwrapMaster, normalizeRecoveryCode, createRecovery, lockoutMinutes };
 })();
 
 const form = document.querySelector('#task-form');
@@ -82,6 +114,7 @@ const authUsername = document.querySelector('#auth-username');
 const authPassword = document.querySelector('#auth-password');
 const authMessage = document.querySelector('#auth-message');
 const authSubmit = document.querySelector('#auth-submit');
+const recoveryCodeInput = document.querySelector('#recovery-code-input');
 
 const storageKey = 'taskflow-v2';
 const accountStorageKey = 'taskflow-account-v1';
@@ -107,6 +140,9 @@ let calendarMonth = new Date();
 let account = null;
 let encryptionKey = null;
 let saveQueue = Promise.resolve();
+let authMode = 'register';
+let authBusy = false;
+let afterRecoveryNotice = 'app';
 
 function localDate(date = new Date()) {
   const year = date.getFullYear();
@@ -439,36 +475,88 @@ function showApp() {
   render();
 }
 
+function maskPassword() {
+  authPassword.type = 'password';
+  const toggle = document.querySelector('#toggle-password');
+  toggle.textContent = 'Afficher';
+  toggle.setAttribute('aria-label', 'Afficher le mot de passe');
+  toggle.setAttribute('aria-pressed', 'false');
+}
+
 function showLogin() {
+  authMode = 'login';
   authScreen.hidden = false;
   appShell.hidden = true;
+  authForm.hidden = false;
+  document.querySelector('#recovery-notice').hidden = true;
   document.querySelector('#auth-heading').textContent = 'Se connecter';
   document.querySelector('#auth-intro').textContent = 'Entre ton pseudonyme et ton mot de passe pour retrouver tes tâches.';
-  document.querySelector('#password-guidance').hidden = true;
+  document.querySelector('#auth-password-label').textContent = 'Mot de passe';
+  document.querySelector('#recovery-code-field').hidden = true;
+  document.querySelector('#forgot-password').hidden = false;
+  document.querySelector('#back-to-login').hidden = true;
   authPassword.autocomplete = 'current-password';
   authSubmit.textContent = 'Se connecter';
   authPassword.value = '';
+  maskPassword();
+  recoveryCodeInput.value = '';
+  authMessage.textContent = '';
+  updateStrength();
   updateLockout();
 }
 
+function showRecovery() {
+  authMode = 'recovery';
+  document.querySelector('#auth-heading').textContent = 'Retrouver mon compte';
+  document.querySelector('#auth-intro').textContent = 'Entre le code de récupération conservé lors de la création du compte, puis choisis un nouveau mot de passe.';
+  document.querySelector('#auth-password-label').textContent = 'Nouveau mot de passe';
+  document.querySelector('#recovery-code-field').hidden = false;
+  document.querySelector('#forgot-password').hidden = true;
+  document.querySelector('#back-to-login').hidden = false;
+  authPassword.autocomplete = 'new-password';
+  authPassword.value = '';
+  maskPassword();
+  authSubmit.textContent = 'Changer le mot de passe';
+  authMessage.textContent = account.recovery ? '' : "Aucun code de récupération n'a encore été créé pour ce compte. Connecte-toi d'abord avec ton mot de passe.";
+  updateStrength();
+  updateLockout();
+}
+
+function showRecoveryNotice(code, nextAction) {
+  afterRecoveryNotice = nextAction;
+  authMode = 'notice';
+  authScreen.hidden = false;
+  appShell.hidden = true;
+  authForm.hidden = true;
+  document.querySelector('#recovery-notice').hidden = false;
+  document.querySelector('#recovery-code-display').textContent = code;
+  document.querySelector('#auth-heading').textContent = 'Code de récupération';
+  document.querySelector('#auth-intro').textContent = 'Enregistre ce code avant de continuer.';
+}
+
 function updateStrength() {
-  const level = TaskFlowSecurity.assessPassword(authPassword.value, authUsername.value);
+  const password = authPassword.value;
+  const rules = TaskFlowSecurity.passwordRules(password);
+  for (const [name, met] of Object.entries(rules)) {
+    document.querySelector(`#rule-${name}`).classList.toggle('met', met);
+  }
+  const level = password ? TaskFlowSecurity.assessPassword(password, authUsername.value) : 'neutral';
   const label = document.querySelector('#password-strength');
   const fill = document.querySelector('#strength-fill');
   label.className = `strength ${level}`;
   fill.className = level;
-  label.textContent = { weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
+  label.textContent = { neutral: 'À évaluer', weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
 }
 
 function updateLockout() {
-  if (!account) return;
+  if (!account) { authSubmit.disabled = authBusy; return; }
   const remaining = Math.max(0, account.lockedUntil - Date.now());
-  authSubmit.disabled = remaining > 0;
+  authSubmit.disabled = remaining > 0 || authBusy || (authMode === 'recovery' && !account.recovery);
   if (remaining > 0) {
     const totalSeconds = Math.ceil(remaining / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = String(totalSeconds % 60).padStart(2, '0');
-    authMessage.textContent = `Compte temporairement bloqué. Réessaie dans ${minutes}:${seconds}.`;
+    if (authMode !== 'notice') authMessage.textContent = `Compte temporairement bloqué. Réessaie dans ${minutes}:${seconds}.`;
   } else if (account.lockedUntil) {
     account.lockedUntil = 0;
     localStorage.setItem(accountStorageKey, JSON.stringify(account));
@@ -492,54 +580,119 @@ async function createAccount(username, password) {
     authMessage.textContent = 'Le mot de passe doit contenir 8 à 64 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
     return;
   }
-  const salt = TaskFlowSecurity.toBase64(crypto.getRandomValues(new Uint8Array(16)));
-  const key = await TaskFlowSecurity.deriveKey(password, salt);
   const legacy = localStorage.getItem(storageKey);
   if (legacy) load(JSON.parse(legacy));
-  const data = await TaskFlowSecurity.encrypt(key, { tasks, trash });
-  const createdAccount = { username, salt, data, failedAttempts: 0, lockedUntil: 0 };
+  const master = await TaskFlowSecurity.newMasterKey();
+  const passwordWrapper = await TaskFlowSecurity.wrapMaster(password, master.raw);
+  const recovery = await TaskFlowSecurity.createRecovery(master.raw);
+  const data = await TaskFlowSecurity.encrypt(master.key, { tasks, trash });
+  const createdAccount = { version: 2, username, ...passwordWrapper, recovery: recovery.wrapper, data, failedAttempts: 0, lockedUntil: 0 };
   localStorage.setItem(accountStorageKey, JSON.stringify(createdAccount));
   if (legacy) localStorage.removeItem(storageKey);
   account = createdAccount;
-  encryptionKey = key;
-  showApp();
+  encryptionKey = master.key;
+  showRecoveryNotice(recovery.code, 'app');
 }
 
 async function login(username, password) {
   if (account.lockedUntil > Date.now()) { updateLockout(); return; }
   if (username !== account.username) { recordFailure(); return; }
+  let key;
+  let data;
+  let recoveryCode = null;
   try {
-    const key = await TaskFlowSecurity.deriveKey(password, account.salt);
-    const data = await TaskFlowSecurity.decrypt(key, account.data);
-    encryptionKey = key;
-    load(data);
-    account.failedAttempts = 0;
-    account.lockedUntil = 0;
-    localStorage.setItem(accountStorageKey, JSON.stringify(account));
-    authMessage.textContent = '';
-    showApp();
+    if (account.version === 2) {
+      key = (await TaskFlowSecurity.unwrapMaster(password, account)).key;
+      data = await TaskFlowSecurity.decrypt(key, account.data);
+    } else {
+      const oldKey = await TaskFlowSecurity.deriveKey(password, account.salt);
+      data = await TaskFlowSecurity.decrypt(oldKey, account.data);
+      const master = await TaskFlowSecurity.newMasterKey();
+      const passwordWrapper = await TaskFlowSecurity.wrapMaster(password, master.raw);
+      const recovery = await TaskFlowSecurity.createRecovery(master.raw);
+      const migrated = { ...account, version: 2, ...passwordWrapper, recovery: recovery.wrapper, data: await TaskFlowSecurity.encrypt(master.key, data) };
+      localStorage.setItem(accountStorageKey, JSON.stringify(migrated));
+      account = migrated;
+      key = master.key;
+      recoveryCode = recovery.code;
+    }
   } catch (error) {
     recordFailure();
+    return;
   }
+  encryptionKey = key;
+  load(data);
+  account.failedAttempts = 0;
+  account.lockedUntil = 0;
+  localStorage.setItem(accountStorageKey, JSON.stringify(account));
+  authMessage.textContent = '';
+  if (recoveryCode) showRecoveryNotice(recoveryCode, 'app');
+  else showApp();
+}
+
+async function recoverAccount(username, code, newPassword) {
+  if (account.lockedUntil > Date.now()) { updateLockout(); return; }
+  if (!Object.values(TaskFlowSecurity.passwordRules(newPassword)).every(Boolean)) {
+    authMessage.textContent = 'Choisis un nouveau mot de passe de 8 à 64 caractères avec majuscule, minuscule, chiffre et caractère spécial.';
+    return;
+  }
+  if (username !== account.username || !account.recovery || !/^[A-F0-9]{32}$/.test(TaskFlowSecurity.normalizeRecoveryCode(code))) {
+    recordFailure();
+    return;
+  }
+  let master;
+  try {
+    master = await TaskFlowSecurity.unwrapMaster(TaskFlowSecurity.normalizeRecoveryCode(code), account.recovery);
+    await TaskFlowSecurity.decrypt(master.key, account.data);
+  } catch (error) {
+    recordFailure();
+    return;
+  }
+  const passwordWrapper = await TaskFlowSecurity.wrapMaster(newPassword, master.raw);
+  const recovery = await TaskFlowSecurity.createRecovery(master.raw);
+  const updated = { ...account, ...passwordWrapper, recovery: recovery.wrapper, failedAttempts: 0, lockedUntil: 0 };
+  localStorage.setItem(accountStorageKey, JSON.stringify(updated));
+  account = updated;
+  recoveryCodeInput.value = '';
+  showRecoveryNotice(recovery.code, 'login');
 }
 
 authPassword.addEventListener('input', updateStrength);
 authUsername.addEventListener('input', updateStrength);
+document.querySelector('#toggle-password').addEventListener('click', () => {
+  const visible = authPassword.type === 'password';
+  authPassword.type = visible ? 'text' : 'password';
+  const toggle = document.querySelector('#toggle-password');
+  toggle.textContent = visible ? 'Masquer' : 'Afficher';
+  toggle.setAttribute('aria-label', visible ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+  toggle.setAttribute('aria-pressed', String(visible));
+  authPassword.focus();
+});
+document.querySelector('#forgot-password').addEventListener('click', showRecovery);
+document.querySelector('#back-to-login').addEventListener('click', showLogin);
+document.querySelector('#recovery-notice-done').addEventListener('click', () => {
+  document.querySelector('#recovery-code-display').textContent = '';
+  if (afterRecoveryNotice === 'login') showLogin();
+  else showApp();
+});
 authForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  if (authSubmit.disabled) return;
+  if (authSubmit.disabled || authBusy) return;
   const username = authUsername.value;
   const password = authPassword.value;
-  authSubmit.disabled = true;
+  authBusy = true;
+  updateLockout();
   authMessage.textContent = '';
   try {
-    if (account) await login(username, password);
+    if (authMode === 'recovery') await recoverAccount(username, recoveryCodeInput.value, password);
+    else if (account) await login(username, password);
     else await createAccount(username, password);
   } catch (error) {
     authMessage.textContent = 'Impossible de traiter le compte sur cet appareil. Vérifie que le stockage local est disponible.';
   } finally {
-    authPassword.value = '';
-    if (!account || account.lockedUntil <= Date.now()) authSubmit.disabled = false;
+    if (authMode !== 'register') authPassword.value = '';
+    authBusy = false;
+    updateLockout();
     updateStrength();
   }
 });
@@ -559,6 +712,7 @@ try {
   if (rawAccount) {
     account = JSON.parse(rawAccount);
     if (typeof account.username !== 'string' || !account.salt || !account.data) throw new Error('Compte invalide');
+    if (account.version === 2 && (!account.wrappedKey || !account.recovery)) throw new Error('Compte invalide');
     account.failedAttempts = Number.isInteger(account.failedAttempts) ? account.failedAttempts : 0;
     account.lockedUntil = Number.isFinite(account.lockedUntil) ? account.lockedUntil : 0;
     showLogin();

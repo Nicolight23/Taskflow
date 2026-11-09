@@ -17,16 +17,32 @@
       <p id="auth-intro">Choisis un pseudonyme et un mot de passe pour protéger tes tâches sur cet appareil.</p>
       <form id="auth-form">
         <div class="field"><label for="auth-username">Pseudonyme</label><input id="auth-username" name="username" type="text" autocomplete="username" required></div>
-        <div class="field"><label for="auth-password">Mot de passe</label><input id="auth-password" name="password" type="password" autocomplete="new-password" required></div>
+        <div class="field"><label id="auth-password-label" for="auth-password">Mot de passe</label><div class="password-entry"><input id="auth-password" name="password" type="password" autocomplete="new-password" required><button id="toggle-password" type="button" aria-label="Afficher le mot de passe" aria-pressed="false">Afficher</button></div></div>
+        <div id="recovery-code-field" class="field" hidden><label for="recovery-code-input">Code de récupération</label><input id="recovery-code-input" type="text" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></div>
         <div id="password-guidance" class="password-guidance">
-          <p>8 à 64 caractères, avec une majuscule, une minuscule, un chiffre et un caractère spécial.</p>
-          <p>Qualité estimée : <strong id="password-strength" class="strength weak">Faible</strong></p>
-          <div class="strength-track" aria-hidden="true"><span id="strength-fill" class="weak"></span></div>
+          <p>Qualité estimée : <strong id="password-strength" class="strength neutral" aria-live="polite">À évaluer</strong></p>
+          <div class="strength-track" aria-hidden="true"><span id="strength-fill" class="neutral"></span></div>
+          <ul class="password-rules" aria-label="Critères du mot de passe">
+            <li id="rule-length">8 à 64 caractères</li>
+            <li id="rule-uppercase">Une majuscule</li>
+            <li id="rule-lowercase">Une minuscule</li>
+            <li id="rule-number">Un chiffre</li>
+            <li id="rule-special">Un caractère spécial</li>
+          </ul>
           <p class="password-advice">Pour un meilleur mot de passe, vise au moins 16 caractères et évite les suites prévisibles.</p>
         </div>
         <p id="auth-message" role="alert" aria-live="polite"></p>
         <button id="auth-submit" class="primary-button" type="submit">Créer le compte</button>
+        <button id="forgot-password" class="text-button" type="button" hidden>Mot de passe oublié ?</button>
+        <button id="back-to-login" class="text-button" type="button" hidden>Retour à la connexion</button>
       </form>
+      <div id="recovery-notice" class="recovery-notice" hidden>
+        <h2>Conserve ton code de récupération</h2>
+        <p>Ce code permet de choisir un nouveau mot de passe si tu oublies l'actuel. Il ne sera pas affiché une seconde fois.</p>
+        <code id="recovery-code-display"></code>
+        <p>Enregistre-le dans un endroit sûr, séparé de cet appareil.</p>
+        <button id="recovery-notice-done" class="primary-button" type="button">J'ai enregistré le code</button>
+      </div>
     </section>
   </main>
   <div class="app-shell" id="app-shell" hidden>
