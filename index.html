@@ -1,41 +1,56 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TaskFlow</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="app.js" defer></script>
-  </head>
-  <body>
-    <main>
-      <h1>TaskFlow</h1>
-      <section aria-labelledby="add-heading">
-        <h2 id="add-heading">Ajouter une tâche</h2>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskFlow</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Navigation des tâches">
+      <div class="brand"><span class="brand-icon">✓</span><strong>TaskFlow</strong><button id="close-sidebar" class="mobile-only icon-button" type="button" aria-label="Fermer le menu">×</button></div>
+      <p class="nav-caption">ESPACE DE TRAVAIL</p>
+      <nav aria-label="Filtres">
+        <button class="nav-item active" type="button" data-view="all" aria-current="page"><span>▦</span> Toutes <small id="count-all">0</small></button>
+        <button class="nav-item" type="button" data-view="todo"><span>○</span> À faire <small id="count-todo">0</small></button>
+        <button class="nav-item" type="button" data-view="done"><span>✓</span> Terminées <small id="count-done">0</small></button>
+      </nav>
+      <div class="sidebar-bottom"><button class="nav-item" type="button" data-view="trash"><span>♲</span> Corbeille <small id="count-trash">0</small></button><p>Les tâches restent sur cet appareil.</p></div>
+    </aside>
+    <main class="workspace">
+      <header class="page-header">
+        <button id="open-sidebar" class="mobile-only icon-button" type="button" aria-label="Ouvrir le menu" aria-expanded="false">☰</button>
+        <div><p class="eyebrow">MON ESPACE</p><h1 id="view-heading">Toutes les tâches</h1><p id="view-description">Organise tes tâches et garde une vue claire sur la suite.</p></div>
+        <span class="local-badge">● Sur cet appareil</span>
+      </header>
+      <section class="composer glass-card" id="composer" aria-labelledby="add-heading">
+        <div class="section-heading"><div><p class="eyebrow">NOUVELLE TÂCHE</p><h2 id="add-heading">Qu'as-tu à faire ?</h2></div><span class="section-icon">＋</span></div>
         <form id="task-form">
-          <label for="title">Titre</label>
-          <input id="title" name="title" type="text" required>
-
-          <label for="priority">Priorité</label>
-          <select id="priority" name="priority">
-            <option value="pas_urgent">Pas urgent</option>
-            <option value="moyennement_urgent">Moyennement urgent</option>
-            <option value="urgent">Urgent</option>
-          </select>
-
-          <label for="due-date">Date d'échéance</label>
-          <input id="due-date" name="dueDate" type="date" required>
-
-          <button type="submit">Ajouter</button>
+          <div class="field"><label for="title">Titre de la tâche</label><input id="title" name="title" type="text" placeholder="Ex. : Réviser le chapitre 3" required maxlength="160"></div>
+          <div class="form-row">
+            <div class="field"><label for="priority">Priorité</label><select id="priority" name="priority"><option value="pas_urgent">Pas urgent</option><option value="moyennement_urgent">Moyennement urgent</option><option value="urgent">Urgent</option></select></div>
+            <div class="field"><label for="due-date">Échéance</label><button id="due-date" class="date-trigger" type="button" aria-haspopup="dialog" aria-expanded="false">Choisir une date ▦</button><input id="due-date-value" name="dueDate" type="hidden"></div>
+            <div class="field"><label for="due-time">Heure</label><input id="due-time" name="dueTime" type="time" required value="18:00"></div>
+          </div>
+          <div class="form-footer"><p id="message" role="alert"></p><button class="primary-button" type="submit">Ajouter la tâche →</button></div>
         </form>
-        <p id="message" role="alert"></p>
       </section>
-
-      <section aria-labelledby="list-heading">
-        <h2 id="list-heading">Toutes les tâches</h2>
-        <p id="empty-message">Aucune tâche pour le moment.</p>
-        <ul id="task-list"></ul>
+      <section class="tasks-section" aria-labelledby="list-heading">
+        <div class="list-heading"><div><p class="eyebrow" id="list-eyebrow">VUE D'ENSEMBLE</p><h2 id="list-heading">Tes tâches</h2></div><span id="visible-count">0 tâche</span></div>
+        <p id="empty-message" class="empty-state glass-card">Aucune tâche pour le moment.</p>
+        <ul id="task-list" class="task-list"></ul>
       </section>
     </main>
-  </body>
+  </div>
+  <div id="calendar" class="calendar glass-card" role="dialog" aria-label="Choisir une date" hidden>
+    <div class="calendar-header"><button id="previous-month" class="icon-button" type="button" aria-label="Mois précédent">‹</button><strong id="calendar-month"></strong><button id="next-month" class="icon-button" type="button" aria-label="Mois suivant">›</button></div>
+    <div class="weekdays" aria-hidden="true"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
+    <div id="calendar-days" class="calendar-days"></div>
+    <button id="calendar-today" class="today-button" type="button">Aujourd'hui</button>
+  </div>
+  <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+</body>
 </html>

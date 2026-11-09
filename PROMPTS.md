@@ -245,7 +245,7 @@ Nous pouvons ouvrir index.html dans un navigateur, effectuer les cinq actions du
 
 ```
 
-## Prompt 6 : envoie du prompt optimal 
+## Prompt 6 : envoie du prompt optimal pour le sprint 1
 
 **Prompt :** Rôle
 Tu es un développeur web senior qui accompagne deux étudiants de première année. Produis un code simple, lisible et que nous pouvons expliquer.
@@ -296,5 +296,42 @@ Nous pouvons ouvrir index.html dans un navigateur, effectuer les cinq actions du
 
 **Résultat :** 
 ```
+J’ai créé le sprint 1 dans le dossier TaskFlow :
+
+- [index.html](<~/Outils IA/Taskflow/index.html>) : formulaire et liste des tâches ;
+- [app.js](<~/Outils IA/Taskflow/app.js>) : ajout, affichage, modification, achèvement et suppression ;
+- [style.css](<~/Outils IA/Taskflow/style.css>) : présentation minimale.
+
+Le titre vide est refusé, les échéances s’affichent en `jj/mm/aaaa`, et chaque tâche possède un identifiant pour cibler la bonne lors d’une modification ou d’une suppression. Les données restent en mémoire jusqu’au rechargement de la page, conformément au découpage des sprints.
+
+**Vérification :** la syntaxe JavaScript est valide. Je n’ai pas pu faire le test interactif : la politique de sécurité du navigateur a bloqué l’ouverture du fichier local. Ouvre `index.html` dans ton navigateur et essaie d’ajouter deux tâches, d’en modifier une, d’en terminer une, puis de supprimer l’autre.
+
+Je n’ai pas touché à `PROMPTS.md`, qui contenait déjà tes modifications. Message de commit proposé : `Sprint 1 : ajouter les fonctions de base de TaskFlow`.
+
+Le service local `remove-ai-marks` était indisponible ; je ne peux donc pas confirmer un nettoyage des nouveaux fichiers par ce service.
+```
+
+## Prompt 7 : envoie du prompt optimal 
+
+**Prompt :** Continue le projet stp avec le sprint 2 uniquement : Implémente les stories 6 à 8: Sauvegarde (localStorage) et mise en forme CSS. 
+
+Description : 
+Pour le style.css et app.js maintenant. Je veux que tu t'inspire d'avantage du screen que je t'ai fourni de ce lien : https://app.notion.com/p/407e3ba6992080fb8c93c8d09728e1b3?v=407e3ba69920809aa5a3000cec4c8a63. Enlève la catégorie "en cours". Je veux également que lorsque l'on coche une task elle se barre et s'affiche en dessous des autres, dans l'ordre dans lesquels ont les as cochées et se grise légèrement, de sorte à ce qu'elle se détache des autres et qu'on la remarque vite comme étant terminées. Rajoute aussi une petite icone corbeille qui garde en mémoire ce qu'on a supprimer pour pouvoir récupérer les task qu'on auraient suprimées par erreur. Ensuite, met de vert à orange à rouge les différentes priorités : rouge = urgent, orange = moyen urgent et vert = pas urgent. Corrige également l'erreur qui permet de mettre une task à avant la date en cours et implémente une feature pour permettre de choisir les heures et minutes de la date selectionnée. Egalement, lorsqu'on à selectioner une date, on ne peut pas fermer le calendrier en cliquant sur la ligne de sélection de la date, il faut cliquer à côté. Corrige ces deux erreurs et aggrandi le calendrier de selection de la date. Ensuite, met les filtres (diapo 2 slide 17/21) dans un menu en t'inspirant de ta propre application ChatGPT, avec le slide déroulant sur le coté avec toutes les conversation. Pour le style global de l'application, inspire toi des visuels d'Apple : le style "liquid glass", rends aussi le site "responsive" pour différent supports. Enfin, gère le localStorage : il faut que, lorsque l'on actualise la page, elle garde en mémoire (uniquement localement, pas de base de données) les modifications apportées.
+
+
+
+**Résultat :** 
+```
+Le **sprint 2** est en place dans [Taskflow](<~VS/Outils IA/Taskflow>) :
+
+- [app.js](<~VS/Outils IA/Taskflow/app.js>) sauvegarde les tâches et la corbeille dans `localStorage`. Après actualisation, les ajouts, modifications, tâches cochées et suppressions sont conservés. Une tâche supprimée peut être restaurée.
+- [index.html](<~VS/Outils IA/Taskflow/index.html>) propose un menu latéral « Toutes », « À faire », « Terminées » et « Corbeille », sans catégorie « En cours ». Le calendrier intégré permet de choisir une date et une heure ; un clic sur son bouton le referme.
+- [style.css](</~VS/Outils IA/Taskflow/style.css>) ajoute une présentation inspirée de la capture Notion et du style verre translucide, adaptée aux petits écrans. Les priorités sont vertes, orange ou rouges. Les tâches cochées sont grisées, barrées et placées après les autres, dans leur ordre d’achèvement.
+
+La validation refuse une échéance passée. **Vérifications effectuées :** syntaxe JavaScript valide, contrôle des espaces dans les fichiers modifiés et trois cas de validation de date réussis. Je n’ai pas pu vérifier l’interface dans un navigateur : sa politique de sécurité a bloqué l’ouverture du fichier local. La page Notion liée n’était pas accessible directement ; je me suis appuyé sur ta capture.
+
+`PROMPTS.md` contenait déjà tes modifications, je l’ai laissé tel quel. Pour le journal du sprint 2, note ce prompt, les fonctions retenues et les changements que vous décidez de garder. Message de commit proposé : `Sprint 2 : sauvegarder les tâches et améliorer l'interface`.
+
+Le service local `remove-ai-marks` était indisponible ; je ne peux pas confirmer son nettoyage des fichiers.
 
 ```
