@@ -13,14 +13,10 @@ const TaskFlowSecurity = (() => {
     };
   }
 
-  function assessPassword(password, username = '') {
-    const rules = passwordRules(password);
-    const length = [...password].length;
-    const simplePattern = /(password|motdepasse|azerty|qwerty|1234|abcd|(.)\2{3,})/i.test(password);
-    const containsUsername = username.length >= 3 && password.toLocaleLowerCase().includes(username.toLocaleLowerCase());
-    if (!Object.values(rules).every(Boolean) || simplePattern || containsUsername) return 'weak';
-    if (length >= 16) return 'strong';
-    if (length >= 12) return 'medium';
+  function assessPassword(password) {
+    const metCount = Object.values(passwordRules(password)).filter(Boolean).length;
+    if (metCount === 5) return 'strong';
+    if (metCount >= 3) return 'medium';
     return 'weak';
   }
 
@@ -537,15 +533,17 @@ function showRecoveryNotice(code, nextAction) {
 function updateStrength() {
   const password = authPassword.value;
   const rules = TaskFlowSecurity.passwordRules(password);
+  const metCount = Object.values(rules).filter(Boolean).length;
   for (const [name, met] of Object.entries(rules)) {
     document.querySelector(`#rule-${name}`).classList.toggle('met', met);
   }
-  const level = password ? TaskFlowSecurity.assessPassword(password, authUsername.value) : 'neutral';
+  const level = TaskFlowSecurity.assessPassword(password);
   const label = document.querySelector('#password-strength');
   const fill = document.querySelector('#strength-fill');
   label.className = `strength ${level}`;
   fill.className = level;
-  label.textContent = { neutral: 'À évaluer', weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
+  fill.style.width = `${metCount * 20}%`;
+  label.textContent = { weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
 }
 
 function updateLockout() {

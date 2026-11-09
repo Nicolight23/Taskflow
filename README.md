@@ -38,7 +38,7 @@
 
 ## Sprint 3 - Connexion locale
 
-Au premier lancement, créez un pseudonyme et un mot de passe. Le pseudonyme accepte les lettres, chiffres et caractères spéciaux. Le mot de passe doit contenir 8 à 64 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial. La jauge « faible / moyen / fort » est une estimation fondée sur la longueur et sur quelques suites faciles à deviner ; elle ne garantit pas la sécurité du mot de passe.
+Au premier lancement, créez un pseudonyme et un mot de passe. Le pseudonyme accepte les lettres, chiffres et caractères spéciaux. Le mot de passe doit contenir 8 à 64 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial. La jauge indique « faible » pour 0 à 2 critères cochés, « moyen » pour 3 ou 4 et « fort » pour 5. Elle vérifie ces critères, mais ne garantit pas que le mot de passe soit difficile à deviner.
 
 Les tâches sont chiffrées sur cet appareil. Le mot de passe ou le code de récupération permet de déverrouiller la clé de chiffrement. Les anciennes tâches locales sont reprises lors de la création du compte. Après trois connexions ratées, l'accès est bloqué pendant 5 minutes ; chaque nouvel échec après l'attente double la durée (10, 20, 40 minutes, etc.). Une connexion réussie remet le compteur à zéro.
 
