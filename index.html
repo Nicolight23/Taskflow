@@ -6,10 +6,31 @@
   <title>TaskFlow</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="stylesheet" href="style.css">
+  <script src="security.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="app-shell">
+  <main id="auth-screen" class="auth-screen">
+    <section class="auth-card glass-card" aria-labelledby="auth-heading">
+      <div class="auth-brand"><span class="brand-icon" aria-hidden="true">✓</span><strong>TaskFlow</strong></div>
+      <p class="eyebrow">ACCÈS LOCAL</p>
+      <h1 id="auth-heading">Créer un compte</h1>
+      <p id="auth-intro">Choisis un pseudonyme et un mot de passe pour protéger tes tâches sur cet appareil.</p>
+      <form id="auth-form">
+        <div class="field"><label for="auth-username">Pseudonyme</label><input id="auth-username" name="username" type="text" autocomplete="username" required></div>
+        <div class="field"><label for="auth-password">Mot de passe</label><input id="auth-password" name="password" type="password" autocomplete="new-password" required></div>
+        <div id="password-guidance" class="password-guidance">
+          <p>8 à 64 caractères, avec une majuscule, une minuscule, un chiffre et un caractère spécial.</p>
+          <p>Qualité estimée : <strong id="password-strength" class="strength weak">Faible</strong></p>
+          <div class="strength-track" aria-hidden="true"><span id="strength-fill" class="weak"></span></div>
+          <p class="password-advice">Pour un meilleur mot de passe, vise au moins 16 caractères et évite les suites prévisibles.</p>
+        </div>
+        <p id="auth-message" role="alert" aria-live="polite"></p>
+        <button id="auth-submit" class="primary-button" type="submit">Créer le compte</button>
+      </form>
+    </section>
+  </main>
+  <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar" id="sidebar" aria-label="Navigation des tâches">
       <div class="brand"><span class="brand-icon">✓</span><strong>TaskFlow</strong><button id="close-sidebar" class="mobile-only icon-button" type="button" aria-label="Fermer le menu">×</button></div>
       <p class="nav-caption">ESPACE DE TRAVAIL</p>
@@ -18,7 +39,7 @@
         <button class="nav-item" type="button" data-view="todo"><span>○</span> À faire <small id="count-todo">0</small></button>
         <button class="nav-item" type="button" data-view="done"><span>✓</span> Terminées <small id="count-done">0</small></button>
       </nav>
-      <div class="sidebar-bottom"><button class="nav-item" type="button" data-view="trash"><span>♲</span> Corbeille <small id="count-trash">0</small></button><p>Les tâches restent sur cet appareil.</p></div>
+      <div class="sidebar-bottom"><button class="nav-item" type="button" data-view="trash"><span>♲</span> Corbeille <small id="count-trash">0</small></button><button id="logout" class="nav-item" type="button"><span>⇥</span> Se déconnecter</button><p>Les tâches restent sur cet appareil.</p></div>
     </aside>
     <main class="workspace">
       <header class="page-header">

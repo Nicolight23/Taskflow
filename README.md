@@ -35,3 +35,11 @@
  "echeance": "2026-11-15",
  "statut": "a_faire"
 }
+
+## Sprint 3 - Connexion locale
+
+Au premier lancement, créez un pseudonyme et un mot de passe. Le pseudonyme accepte les lettres, chiffres et caractères spéciaux. Le mot de passe doit contenir 8 à 64 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial. La jauge « faible / moyen / fort » est une estimation fondée sur la longueur et sur quelques suites faciles à deviner ; elle ne garantit pas la sécurité du mot de passe.
+
+Les tâches sont chiffrées sur cet appareil à partir du mot de passe. Les anciennes tâches locales sont reprises lors de la création du compte. Après trois connexions ratées, l'accès est bloqué pendant 5 minutes ; chaque nouvel échec après l'attente double la durée (10, 20, 40 minutes, etc.). Une connexion réussie remet le compteur à zéro.
+
+Il n'y a ni serveur, ni synchronisation, ni récupération de mot de passe. Si le mot de passe est perdu, les tâches chiffrées ne peuvent pas être relues. Le blocage des tentatives est enregistré localement et peut être contourné par quelqu'un qui contrôle le navigateur ; ce n'est donc pas une authentification adaptée à un service en ligne ou à des données sensibles.

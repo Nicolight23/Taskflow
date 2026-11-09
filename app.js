@@ -8,8 +8,16 @@ const dateValue = document.querySelector('#due-date-value');
 const timeInput = document.querySelector('#due-time');
 const sidebar = document.querySelector('#sidebar');
 const backdrop = document.querySelector('#sidebar-backdrop');
+const authScreen = document.querySelector('#auth-screen');
+const appShell = document.querySelector('#app-shell');
+const authForm = document.querySelector('#auth-form');
+const authUsername = document.querySelector('#auth-username');
+const authPassword = document.querySelector('#auth-password');
+const authMessage = document.querySelector('#auth-message');
+const authSubmit = document.querySelector('#auth-submit');
 
 const storageKey = 'taskflow-v2';
+const accountStorageKey = 'taskflow-account-v1';
 const priorityLabels = {
   pas_urgent: 'Pas urgent',
   moyennement_urgent: 'Moyennement urgent',
@@ -29,6 +37,9 @@ let nextCompletionOrder = 1;
 let view = 'all';
 let calendarTarget = null;
 let calendarMonth = new Date();
+let account = null;
+let encryptionKey = null;
+let saveQueue = Promise.resolve();
 
 function localDate(date = new Date()) {
   const year = date.getFullYear();
@@ -49,9 +60,8 @@ function validDeadline(date, time) {
   return !Number.isNaN(deadline.getTime()) && deadline >= new Date();
 }
 
-function load() {
+function load(saved) {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey));
     if (!saved || !Array.isArray(saved.tasks) || !Array.isArray(saved.trash)) return;
     tasks = saved.tasks.filter((task) => task && Number.isInteger(task.id) && typeof task.title === 'string' && priorityLabels[task.priority] && typeof task.dueDate === 'string');
     trash = saved.trash.filter((task) => task && Number.isInteger(task.id) && typeof task.title === 'string');
@@ -63,11 +73,18 @@ function load() {
 }
 
 function save() {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify({ tasks, trash }));
-  } catch (error) {
+  const snapshot = { tasks: structuredClone(tasks), trash: structuredClone(trash) };
+  saveQueue = saveQueue.catch(() => {}).then(async () => {
+    if (!encryptionKey || !account) return false;
+    const encrypted = await TaskFlowSecurity.encrypt(encryptionKey, snapshot);
+    account.data = encrypted;
+    localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    return true;
+  }).catch(() => {
     message.textContent = "Impossible d'enregistrer sur cet appareil. Vérifie l'espace disponible dans le navigateur.";
-  }
+    return false;
+  });
+  return saveQueue;
 }
 
 function button(label, action, className = 'subtle-button') {
@@ -81,9 +98,9 @@ function button(label, action, className = 'subtle-button') {
   return element;
 }
 
-function updateTask(task, changes) {
+async function updateTask(task, changes) {
   Object.assign(task, changes);
-  save();
+  await save();
   render();
 }
 
@@ -152,18 +169,18 @@ function renderTask(task) {
   const actions = document.createElement('div');
   actions.className = 'actions';
   if (view === 'trash') {
-    actions.append(button('Restaurer', () => {
+    actions.append(button('Restaurer', async () => {
       trash = trash.filter((candidate) => candidate.id !== task.id);
       tasks.push(task);
-      save();
+      await save();
       render();
     }));
   } else {
     actions.append(button('Modifier', () => showEditForm(item, task)));
-    const remove = button('Supprimer vers la corbeille', () => {
+    const remove = button('Supprimer vers la corbeille', async () => {
       tasks = tasks.filter((candidate) => candidate.id !== task.id);
       trash.push(task);
-      save();
+      await save();
       render();
     }, 'icon-button');
     remove.textContent = '🗑';
@@ -313,14 +330,14 @@ document.addEventListener('pointerdown', (event) => {
 });
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeCalendar(); });
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const title = form.elements.title.value.trim();
   if (!title) { message.textContent = 'Saisis un titre pour la tâche.'; form.elements.title.focus(); return; }
   if (!validDeadline(dateValue.value, timeInput.value)) { message.textContent = 'Choisis une date et une heure futures.'; return; }
   tasks.push({ id: nextId++, title, priority: form.elements.priority.value, dueDate: dateValue.value, dueTime: timeInput.value, done: false, completedOrder: null });
   message.textContent = '';
-  save();
+  await save();
   form.reset();
   dateValue.value = '';
   dateTrigger.textContent = 'Choisir une date ▦';
@@ -348,5 +365,140 @@ document.querySelectorAll('[data-view]').forEach((navButton) => navButton.addEve
   render();
 }));
 
-load();
-render();
+function showApp() {
+  authPassword.value = '';
+  authScreen.hidden = true;
+  appShell.hidden = false;
+  render();
+}
+
+function showLogin() {
+  authScreen.hidden = false;
+  appShell.hidden = true;
+  document.querySelector('#auth-heading').textContent = 'Se connecter';
+  document.querySelector('#auth-intro').textContent = 'Entre ton pseudonyme et ton mot de passe pour retrouver tes tâches.';
+  document.querySelector('#password-guidance').hidden = true;
+  authPassword.autocomplete = 'current-password';
+  authSubmit.textContent = 'Se connecter';
+  authPassword.value = '';
+  updateLockout();
+}
+
+function updateStrength() {
+  const level = TaskFlowSecurity.assessPassword(authPassword.value, authUsername.value);
+  const label = document.querySelector('#password-strength');
+  const fill = document.querySelector('#strength-fill');
+  label.className = `strength ${level}`;
+  fill.className = level;
+  label.textContent = { weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
+}
+
+function updateLockout() {
+  if (!account) return;
+  const remaining = Math.max(0, account.lockedUntil - Date.now());
+  authSubmit.disabled = remaining > 0;
+  if (remaining > 0) {
+    const totalSeconds = Math.ceil(remaining / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    authMessage.textContent = `Compte temporairement bloqué. Réessaie dans ${minutes}:${seconds}.`;
+  } else if (account.lockedUntil) {
+    account.lockedUntil = 0;
+    localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    authMessage.textContent = 'Tu peux réessayer de te connecter.';
+  }
+}
+
+function recordFailure() {
+  account.failedAttempts += 1;
+  const minutes = TaskFlowSecurity.lockoutMinutes(account.failedAttempts);
+  if (minutes) account.lockedUntil = Date.now() + minutes * 60_000;
+  localStorage.setItem(accountStorageKey, JSON.stringify(account));
+  authMessage.textContent = 'Pseudonyme ou mot de passe incorrect.';
+  updateLockout();
+}
+
+async function createAccount(username, password) {
+  if (!username.trim()) { authMessage.textContent = 'Saisis un pseudonyme.'; return; }
+  const rules = TaskFlowSecurity.passwordRules(password);
+  if (!Object.values(rules).every(Boolean)) {
+    authMessage.textContent = 'Le mot de passe doit contenir 8 à 64 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.';
+    return;
+  }
+  const salt = TaskFlowSecurity.toBase64(crypto.getRandomValues(new Uint8Array(16)));
+  const key = await TaskFlowSecurity.deriveKey(password, salt);
+  const legacy = localStorage.getItem(storageKey);
+  if (legacy) load(JSON.parse(legacy));
+  const data = await TaskFlowSecurity.encrypt(key, { tasks, trash });
+  const createdAccount = { username, salt, data, failedAttempts: 0, lockedUntil: 0 };
+  localStorage.setItem(accountStorageKey, JSON.stringify(createdAccount));
+  if (legacy) localStorage.removeItem(storageKey);
+  account = createdAccount;
+  encryptionKey = key;
+  showApp();
+}
+
+async function login(username, password) {
+  if (account.lockedUntil > Date.now()) { updateLockout(); return; }
+  if (username !== account.username) { recordFailure(); return; }
+  try {
+    const key = await TaskFlowSecurity.deriveKey(password, account.salt);
+    const data = await TaskFlowSecurity.decrypt(key, account.data);
+    encryptionKey = key;
+    load(data);
+    account.failedAttempts = 0;
+    account.lockedUntil = 0;
+    localStorage.setItem(accountStorageKey, JSON.stringify(account));
+    authMessage.textContent = '';
+    showApp();
+  } catch (error) {
+    recordFailure();
+  }
+}
+
+authPassword.addEventListener('input', updateStrength);
+authUsername.addEventListener('input', updateStrength);
+authForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (authSubmit.disabled) return;
+  const username = authUsername.value;
+  const password = authPassword.value;
+  authSubmit.disabled = true;
+  authMessage.textContent = '';
+  try {
+    if (account) await login(username, password);
+    else await createAccount(username, password);
+  } catch (error) {
+    authMessage.textContent = 'Impossible de traiter le compte sur cet appareil. Vérifie que le stockage local est disponible.';
+  } finally {
+    authPassword.value = '';
+    if (!account || account.lockedUntil <= Date.now()) authSubmit.disabled = false;
+    updateStrength();
+  }
+});
+
+document.querySelector('#logout').addEventListener('click', async () => {
+  await saveQueue;
+  encryptionKey = null;
+  tasks = [];
+  trash = [];
+  closeCalendar();
+  closeSidebar();
+  showLogin();
+});
+
+try {
+  const rawAccount = localStorage.getItem(accountStorageKey);
+  if (rawAccount) {
+    account = JSON.parse(rawAccount);
+    if (typeof account.username !== 'string' || !account.salt || !account.data) throw new Error('Compte invalide');
+    account.failedAttempts = Number.isInteger(account.failedAttempts) ? account.failedAttempts : 0;
+    account.lockedUntil = Number.isFinite(account.lockedUntil) ? account.lockedUntil : 0;
+    showLogin();
+  }
+} catch (error) {
+  account = null;
+  authSubmit.disabled = true;
+  authMessage.textContent = 'Le compte local est illisible. Les données existantes ont été conservées.';
+}
+setInterval(updateLockout, 1000);
