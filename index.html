@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TaskFlow</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <h1>TaskFlow</h1>
+      <section aria-labelledby="add-heading">
+        <h2 id="add-heading">Ajouter une tâche</h2>
+        <form id="task-form">
+          <label for="title">Titre</label>
+          <input id="title" name="title" type="text" required>
+
+          <label for="priority">Priorité</label>
+          <select id="priority" name="priority">
+            <option value="pas_urgent">Pas urgent</option>
+            <option value="moyennement_urgent">Moyennement urgent</option>
+            <option value="urgent">Urgent</option>
+          </select>
+
+          <label for="due-date">Date d'échéance</label>
+          <input id="due-date" name="dueDate" type="date" required>
+
+          <button type="submit">Ajouter</button>
+        </form>
+        <p id="message" role="alert"></p>
+      </section>
+
+      <section aria-labelledby="list-heading">
+        <h2 id="list-heading">Toutes les tâches</h2>
+        <p id="empty-message">Aucune tâche pour le moment.</p>
+        <ul id="task-list"></ul>
+      </section>
+    </main>
+  </body>
+</html>

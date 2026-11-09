@@ -1,0 +1,38 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f5f7fa;
+  color: #202a35;
+  font: 1rem/1.5 system-ui, sans-serif;
+}
+
+main {
+  max-width: 760px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+section {
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: white;
+  border: 1px solid #d8dfe7;
+  border-radius: 8px;
+}
+
+form { display: grid; gap: .5rem; }
+input, select, button { font: inherit; padding: .5rem; }
+button { cursor: pointer; }
+#message { color: #a32222; }
+#task-list { list-style: none; padding: 0; }
+
+.task {
+  padding: 1rem 0;
+  border-top: 1px solid #d8dfe7;
+}
+
+.task p { margin: .25rem 0; }
+.task.done .task-title { text-decoration: line-through; }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.edit-form { margin-top: .75rem; }
