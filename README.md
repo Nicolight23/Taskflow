@@ -26,15 +26,20 @@
 
 ## Modèle de données
 
+Une tâche utilise les champs suivants dans `app.js` :
 
+```json
 {
- "id": 1,
- "titre": "Réviser le CSS",
- "description": "Flexbox",
- "priorite": "haute",
- "echeance": "2026-11-15",
- "statut": "a_faire"
+  "id": 1,
+  "title": "Réviser le CSS",
+  "priority": "urgent",
+  "dueDate": "2026-11-15",
+  "dueTime": "18:00",
+  "categoryId": "school",
+  "done": false,
+  "completedOrder": null
 }
+```
 
 ## Sprint 3 - Connexion locale
 

@@ -392,3 +392,40 @@ J’ai ajouté **« Créer un compte »** sur l’écran de connexion. Un nouvea
 
 L’application revient désormais à la connexion après une actualisation. **Je ne peux pas fermer la session déjà ouverte dans ton onglet depuis les fichiers du projet** : clique sur « Se déconnecter », ou actualise la page, puis choisis « Créer un compte » pour faire ton essai.
 ```
+
+
+## Prompt 11 & 12 : rajout des features de la licence Info
+
+**Prompt 11:** Revenons sur le sprint 3 mais cette fois sur la partie informatique. Il faut rajouter des features en plus. Pour chacune des nouveaux éléments, reste logique avec la DA déjà présente dans l’application. Voici les features : 
+- Pouvoir trier les tâches en fonction de leur priorité ou de leur échéance
+- Filtrer les tâches par status donc uniquement afficher si l’on ne veut que les tâches « Urgent » , « Moyen Urgent » ou « Pas urgent »
+- Créer des catégories pour chacune des tâches. Je veux que l’on puisse mettre un « tag » suivant si une tâche est en lien avec l’école, le perso ou un projet. Pour chaque « tag », associe une couleur particulière. Je veux aussi pouvoir créer des catégories de moi même et choisir son nom et sa couleur.
+- Ajouter une recherche par mot clé pour trouver une tâche en particulier
+
+**Prompt 12:** Il y a un petit bug : quand on est dans la corbeille, on peut créer des catégories, enlève cette erreur, la seule feature de la corbeille doit etre de pouvoir restaurer une tache pas de créer des catégories ni de les gérer
+
+
+**Résultat 1:** 
+```
+J’ai ajouté les quatre fonctions à TaskFlow :
+
+- **Tri** par priorité ou par échéance.
+- **Filtre de priorité** : Urgent, Moyennement urgent ou Pas urgent.
+- **Catégories colorées** : École, Perso et Projet, avec la possibilité de créer les tiennes et de choisir leur couleur. Une catégorie peut être attribuée à la création ou à la modification d’une tâche.
+- **Recherche par mot-clé** dans le titre des tâches.
+
+Ces contrôles peuvent être utilisés ensemble. Les catégories sont enregistrées avec les tâches dans chaque compte local ; les anciennes tâches restent accessibles sans catégorie. Dans la vue « Toutes », les tâches terminées restent sous celles à faire.
+
+J’ai modifié [index.html](~VS/Outils%20IA/Taskflow/index.html), [style.css](~VS/Outils%20IA/Taskflow/style.css), [app.js](~VS/Outils%20IA/Taskflow/app.js) et [README.md](~VS/Outils%20IA/Taskflow/README.md). La syntaxe JavaScript, les deux tris et le chargement d’anciennes données ont été vérifiés. Je n’ai pas pu faire de vérification visuelle dans le navigateur.
+
+Le service local `remove-ai-marks` était indisponible ; je ne peux pas confirmer ce nettoyage.
+```
+
+
+**Résultat 2:** 
+```
+C’est corrigé dans [app.js](~VS/Outils%20IA/Taskflow/app.js:260). Dans la Corbeille, le formulaire de catégories et les contrôles de recherche, de filtre et de tri sont masqués. Les tâches supprimées restent toutes visibles, avec **Restaurer** comme seule action sur chacune.
+
+J’ai vérifié la syntaxe JavaScript et le diff. Le service local `remove-ai-marks` était indisponible ; je ne peux pas confirmer ce nettoyage.
+```
+
