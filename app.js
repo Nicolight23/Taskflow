@@ -2,7 +2,7 @@
 const TaskFlowSecurity = (() => {
   const encoder = new TextEncoder();
 
-  function passwordRules(password) {
+  function passwordRules(password) { //verifie les criteres 
     const length = [...password].length;
     return {
       length: length >= 8 && length <= 64,
@@ -13,7 +13,7 @@ const TaskFlowSecurity = (() => {
     };
   }
 
-  function assessPassword(password) {
+  function assessPassword(password) { //compte les criteres remplis
     const metCount = Object.values(passwordRules(password)).filter(Boolean).length;
     if (metCount === 5) return 'strong';
     if (metCount >= 3) return 'medium';
@@ -28,7 +28,7 @@ const TaskFlowSecurity = (() => {
     return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
   }
 
-  async function deriveKey(password, salt) {
+  async function deriveKey(password, salt) { //transforme mdp en cle 
     const material = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
     return crypto.subtle.deriveKey(
       { name: 'PBKDF2', salt: fromBase64(salt), iterations: 250000, hash: 'SHA-256' },
@@ -39,13 +39,13 @@ const TaskFlowSecurity = (() => {
     );
   }
 
-  async function encrypt(key, data) {
+  async function encrypt(key, data) { // chiffre les taches avant enregistrement
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(JSON.stringify(data)));
     return { iv: toBase64(iv), ciphertext: toBase64(new Uint8Array(ciphertext)) };
   }
 
-  async function decrypt(key, encrypted) {
+  async function decrypt(key, encrypted) { // dechiffre avant la connexion
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: fromBase64(encrypted.iv) },
       key,
@@ -58,18 +58,18 @@ const TaskFlowSecurity = (() => {
     return crypto.subtle.importKey('raw', fromBase64(raw), 'AES-GCM', false, ['encrypt', 'decrypt']);
   }
 
-  async function newMasterKey() {
+  async function newMasterKey() { //créer une cle de recuperation propre au compte
     const raw = toBase64(crypto.getRandomValues(new Uint8Array(32)));
     return { raw, key: await importMasterKey(raw) };
   }
 
-  async function wrapMaster(password, raw) {
+  async function wrapMaster(password, raw) { // decrypte la cle quand le mdp est bon
     const salt = toBase64(crypto.getRandomValues(new Uint8Array(16)));
     const key = await deriveKey(password, salt);
     return { salt, wrappedKey: await encrypt(key, { master: raw }) };
   }
 
-  async function unwrapMaster(password, wrapper) {
+  async function unwrapMaster(password, wrapper) { // decrypte la cle quand le mdp est bon
     const key = await deriveKey(password, wrapper.salt);
     const result = await decrypt(key, wrapper.wrappedKey);
     return { raw: result.master, key: await importMasterKey(result.master) };
@@ -79,7 +79,7 @@ const TaskFlowSecurity = (() => {
     return code.replace(/[\s-]/g, '').toUpperCase();
   }
 
-  async function createRecovery(raw) {
+  async function createRecovery(raw) { // créer le code de recup + on peut choisir un nouveau mdp grace a ce code (si on veut le changer)
     const bytes = crypto.getRandomValues(new Uint8Array(16));
     const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
     const code = hex.match(/.{1,4}/g).join('-');
@@ -93,7 +93,7 @@ const TaskFlowSecurity = (() => {
   return { passwordRules, assessPassword, toBase64, deriveKey, encrypt, decrypt, newMasterKey, wrapMaster, unwrapMaster, normalizeRecoveryCode, createRecovery, lockoutMinutes };
 })();
 
-const form = document.querySelector('#task-form');
+const form = document.querySelector('#task-form'); // trouve le formulaire task-form et met le dans la variable form
 const list = document.querySelector('#task-list');
 const message = document.querySelector('#message');
 const calendar = document.querySelector('#calendar');
@@ -127,7 +127,7 @@ const viewLabels = {
   trash: ['Corbeille', 'TÂCHES SUPPRIMÉES'],
 };
 
-let tasks = [];
+let tasks = []; // taches actives
 let trash = [];
 let nextId = 1;
 let nextCompletionOrder = 1;
@@ -161,7 +161,7 @@ function validDeadline(date, time) {
   return !Number.isNaN(deadline.getTime()) && deadline >= new Date();
 }
 
-function load(saved) {
+function load(saved) { //charge les données
   try {
     if (!saved || !Array.isArray(saved.tasks) || !Array.isArray(saved.trash)) return;
     tasks = saved.tasks.filter((task) => task && Number.isInteger(task.id) && typeof task.title === 'string' && priorityLabels[task.priority] && typeof task.dueDate === 'string');
@@ -173,7 +173,7 @@ function load(saved) {
   }
 }
 
-function save() {
+function save() { //enregistre les modifications localement
   const snapshot = { tasks: structuredClone(tasks), trash: structuredClone(trash) };
   saveQueue = saveQueue.catch(() => {}).then(async () => {
     if (!encryptionKey || !account) return false;
@@ -205,7 +205,7 @@ async function updateTask(task, changes) {
   render();
 }
 
-function render() {
+function render() { //choisit les taches a afficher selon les filtres choisis
   list.replaceChildren();
   const activeCount = tasks.filter((task) => !task.done).length;
   const doneCount = tasks.length - activeCount;
@@ -236,7 +236,7 @@ function render() {
   for (const task of visible) list.append(renderTask(task));
 }
 
-function renderTask(task) {
+function renderTask(task) { // construit la carte de chaque tache
   const item = document.createElement('li');
   item.className = `task${task.done ? ' done' : ''}`;
   const main = document.createElement('div');
@@ -292,7 +292,7 @@ function renderTask(task) {
   return item;
 }
 
-function showEditForm(item, task) {
+function showEditForm(item, task) { //permet de faire des actions sur la tache (modifier, finir, supprimer)
   if (item.querySelector('form')) return;
   const edit = document.createElement('form');
   edit.className = 'edit-form';
@@ -596,7 +596,7 @@ function showRecoveryNotice(code, nextAction) {
   document.querySelector('#auth-intro').textContent = 'Enregistre ce code avant de continuer.';
 }
 
-function updateStrength() {
+function updateStrength() { // permet d'actualiser l'avancement de notre mdp
   const password = authPassword.value;
   const rules = TaskFlowSecurity.passwordRules(password);
   const metCount = Object.values(rules).filter(Boolean).length;
@@ -612,7 +612,7 @@ function updateStrength() {
   label.textContent = { weak: 'Faible', medium: 'Moyen', strong: 'Fort' }[level];
 }
 
-function updateLockout() {
+function updateLockout() { // met a jour le temps et le double
   if (!account || authMode === 'register') { authSubmit.disabled = authBusy; return; }
   const remaining = Math.max(0, account.lockedUntil - Date.now());
   authSubmit.disabled = remaining > 0 || authBusy || (authMode === 'recovery' && !account.recovery);
@@ -628,7 +628,7 @@ function updateLockout() {
   }
 }
 
-function recordFailure() {
+function recordFailure() { // compte les echecs + attribue la duree de blocage du compte
   account.failedAttempts += 1;
   const minutes = TaskFlowSecurity.lockoutMinutes(account.failedAttempts);
   if (minutes) account.lockedUntil = Date.now() + minutes * 60_000;
@@ -637,7 +637,7 @@ function recordFailure() {
   updateLockout();
 }
 
-async function createAccount(username, password) {
+async function createAccount(username, password) { // vérifie le pseudonyme et le mot de passe, crée la clé, chiffre la liste de tâches et enregistre le compte
   if (!username.trim()) { authMessage.textContent = 'Saisis un pseudonyme.'; return; }
   if (readAccount(username)) { authMessage.textContent = 'Ce pseudonyme est déjà utilisé sur cet appareil.'; return; }
   const rules = TaskFlowSecurity.passwordRules(password);
@@ -666,7 +666,7 @@ async function createAccount(username, password) {
   showRecoveryNotice(recovery.code, 'app');
 }
 
-async function login(username, password) {
+async function login(username, password) { // essaie de déverrouiller la clé avec le mot de passe, puis charge les tâches ça réussit
   if (account.lockedUntil > Date.now()) { updateLockout(); return; }
   if (username !== account.username) { recordFailure(); return; }
   let key;

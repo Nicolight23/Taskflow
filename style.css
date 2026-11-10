@@ -5,6 +5,8 @@ body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 85% 0
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #7697f2; outline-offset: 2px; }
+/*l 1 à 7 c'est la base comnmune du site*/
+
 .app-shell { display: flex; min-height: 100vh; }
 .sidebar { display: flex; flex-direction: column; flex: none; width: 252px; padding: 28px 16px 20px; background: #ffffff9c; border-right: 1px solid #ffffffd6; backdrop-filter: blur(28px) saturate(170%); -webkit-backdrop-filter: blur(28px) saturate(170%); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 12px; font-size: 1.2rem; letter-spacing: -.04em; }
@@ -18,6 +20,8 @@ nav { display: grid; gap: 5px; }
 .nav-item span { width: 21px; font-size: 1.2rem; text-align: center; }
 .nav-item small { margin-left: auto; color: #8996a8; }
 .sidebar-bottom { margin-top: auto; }
+/*l 10 à 22 c'est menu latéral : largeur du menu, logo, liens de navigation et couleur de la vue sélectionnée*/
+
 .sidebar-bottom p { margin: 16px 12px 0; color: #8b97a8; font-size: .76rem; }
 .workspace { width: min(100%, 1100px); margin: 0 auto; padding: 52px clamp(20px, 5vw, 70px) 80px; }
 .page-header, .section-heading, .list-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
@@ -28,6 +32,8 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 #view-description { margin-bottom: 0; color: #7d899d; }
 .local-badge { flex: none; padding: 7px 12px; border: 1px solid #ffffffd9; border-radius: 99px; background: #ffffffa3; color: #608275; font-size: .75rem; font-weight: 650; }
 .glass-card { border: 1px solid #ffffffed; border-radius: 22px; background: #ffffffb8; box-shadow: 0 15px 38px #50678720, inset 0 1px #fff; backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%); }
+/*l 25 à 34 c'est zone principale : largeur du contenu, titres, en-têtes et cartes sensées être translucides mais bon*/
+
 .composer { padding: 28px; }
 .section-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: #eaf0ff; color: #6583d7; font-size: 1.6rem; }
 #task-form { margin-top: 25px; }
@@ -38,6 +44,8 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 .form-row { display: grid; grid-template-columns: 1.2fr 1fr .75fr; gap: 16px; margin-top: 18px; }
 .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; }
 #message { min-height: 1.4em; margin: 0; color: #b03737; font-size: .85rem; }
+/*l 37 à 46 c'est formulaire d'ajout : champs, disposition sur une ligne, message d’erreur et bouton principal*/
+
 .primary-button { padding: 11px 18px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #6489ef, #7e74de); box-shadow: 0 6px 17px #6b82d74d; color: white; font-weight: 650; }
 .primary-button:hover { filter: brightness(1.05); }
 .tasks-section { margin-top: 38px; }
@@ -62,6 +70,8 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 .icon-button:hover, .subtle-button:hover { background: #eaf0fc; color: #4665aa; }
 .edit-form { display: grid; gap: 12px; margin: 16px 0 0 38px; padding-top: 15px; border-top: 1px solid #e2e8f0; }
 .edit-form .form-row { margin: 0; }
+/*l 49 à 72 c'est Liste des taches : cartes, case à cocher, boutons d’action et formulaire de modification*/
+
 .edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .empty-state { padding: 38px; color: #8390a2; text-align: center; }
 .calendar { position: fixed; z-index: 30; width: min(350px, calc(100vw - 24px)); padding: 18px; border-color: #dbe3f3; background: #f9fbffef; }
@@ -75,6 +85,8 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 .calendar-days button.selected { background: #7187e1; color: white; }
 .calendar-days button.today { box-shadow: inset 0 0 0 1px #8da0e4; }
 .today-button { width: 100%; margin-top: 12px; padding: 8px; border: 0; border-radius: 9px; background: #eaf0ff; color: #4d69b4; font-weight: 650; }
+/*l 75 à 87 c'est calendrier : taille, grille des jours et apparence du jour choisi ou indisponible*/
+
 .mobile-only { display: none; }
 .auth-screen { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
 .auth-card { width: min(100%, 440px); padding: 34px; }
@@ -112,6 +124,8 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 .recovery-notice h2, .recovery-notice p { margin: 0; }
 .recovery-notice p { color: #647187; font-size: .88rem; }
 .recovery-notice code { display: block; padding: 13px; overflow-wrap: anywhere; border: 1px solid #dbe3ee; border-radius: 11px; background: white; color: #324e91; font-size: .93rem; text-align: center; user-select: all; }
+/*l 90 à 126 c'est connexion : carte de connexion, champs, critères du mot de passe, couleurs de la jauge et affichage du code de récupération*/
+
 @media (max-width: 780px) {
   .sidebar { position: fixed; z-index: 21; inset: 0 auto 0 0; width: min(280px, 82vw); transform: translateX(-105%); transition: transform .2s ease; }
   .sidebar.open { transform: translateX(0); }
@@ -137,3 +151,4 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
   .edit-form { margin-left: 0; }
 }
 @media (max-width: 360px) { .form-row, .edit-form .form-row { grid-template-columns: 1fr; } .form-row .field:first-child { grid-column: auto; } }
+/*l 129 à 153 c'est scalability : adapte le menu et les formulaires aux tablettes et téléphones.*/
