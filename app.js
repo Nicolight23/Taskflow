@@ -111,6 +111,12 @@ const authPassword = document.querySelector('#auth-password');
 const authMessage = document.querySelector('#auth-message');
 const authSubmit = document.querySelector('#auth-submit');
 const recoveryCodeInput = document.querySelector('#recovery-code-input');
+const categoryForm = document.querySelector('#category-form');
+const categorySelect = document.querySelector('#task-category');
+const categoryFilter = document.querySelector('#category-filter');
+const priorityFilter = document.querySelector('#priority-filter');
+const taskSort = document.querySelector('#task-sort');
+const taskSearch = document.querySelector('#task-search');
 
 const storageKey = 'taskflow-v2';
 const accountStorageKey = 'taskflow-account-v1';
@@ -120,6 +126,12 @@ const priorityLabels = {
   moyennement_urgent: 'Moyennement urgent',
   urgent: 'Urgent',
 };
+const defaultCategories = [
+  { id: 'school', name: 'École', color: '#4779cf' },
+  { id: 'personal', name: 'Perso', color: '#a46dc4' },
+  { id: 'project', name: 'Projet', color: '#228f83' },
+];
+const priorityRank = { urgent: 0, moyennement_urgent: 1, pas_urgent: 2 };
 const viewLabels = {
   all: ['Toutes les tâches', 'VUE D\'ENSEMBLE'],
   todo: ['À faire', 'TÂCHES À FAIRE'],
@@ -129,6 +141,7 @@ const viewLabels = {
 
 let tasks = []; // taches actives
 let trash = [];
+let categories = structuredClone(defaultCategories);
 let nextId = 1;
 let nextCompletionOrder = 1;
 let view = 'all';
@@ -164,17 +177,24 @@ function validDeadline(date, time) {
 function load(saved) { //charge les données
   try {
     if (!saved || !Array.isArray(saved.tasks) || !Array.isArray(saved.trash)) return;
+    categories = Array.isArray(saved.categories)
+      ? [...defaultCategories, ...saved.categories.filter((category) => category &&
+        typeof category.id === 'string' && category.id.startsWith('custom-') &&
+        typeof category.name === 'string' && category.name.trim() &&
+        /^#[0-9a-f]{6}$/i.test(category.color))]
+      : structuredClone(defaultCategories);
     tasks = saved.tasks.filter((task) => task && Number.isInteger(task.id) && typeof task.title === 'string' && priorityLabels[task.priority] && typeof task.dueDate === 'string');
     trash = saved.trash.filter((task) => task && Number.isInteger(task.id) && typeof task.title === 'string');
     nextId = Math.max(1, ...tasks.map((task) => task.id + 1), ...trash.map((task) => task.id + 1));
     nextCompletionOrder = Math.max(1, ...tasks.map((task) => (task.completedOrder || 0) + 1));
+    renderCategories();
   } catch (error) {
     message.textContent = 'Les tâches enregistrées sont illisibles. Une nouvelle liste a été ouverte.';
   }
 }
 
 function save() { //enregistre les modifications localement
-  const snapshot = { tasks: structuredClone(tasks), trash: structuredClone(trash) };
+  const snapshot = { tasks: structuredClone(tasks), trash: structuredClone(trash), categories: structuredClone(categories) };
   saveQueue = saveQueue.catch(() => {}).then(async () => {
     if (!encryptionKey || !account) return false;
     const encrypted = await TaskFlowSecurity.encrypt(encryptionKey, snapshot);
@@ -205,6 +225,38 @@ async function updateTask(task, changes) {
   render();
 }
 
+function renderCategories() {
+  const selectedCategory = categorySelect.value;
+  const selectedFilter = categoryFilter.value;
+  categorySelect.replaceChildren(new Option('Sans catégorie', ''));
+  categoryFilter.replaceChildren(new Option('Toutes', 'all'), new Option('Sans catégorie', 'none'));
+  const categoryList = document.querySelector('#category-list');
+  categoryList.replaceChildren();
+  for (const category of categories) {
+    categorySelect.add(new Option(category.name, category.id));
+    categoryFilter.add(new Option(category.name, category.id));
+    categoryList.append(categoryBadge(category));
+  }
+  categorySelect.value = categories.some((category) => category.id === selectedCategory) ? selectedCategory : '';
+  categoryFilter.value = selectedFilter === 'none' || categories.some((category) => category.id === selectedFilter) ? selectedFilter : 'all';
+}
+
+function categoryBadge(category) {
+  const badge = document.createElement('span');
+  badge.className = 'category-badge';
+  badge.textContent = category.name;
+  badge.style.backgroundColor = `${category.color}1f`;
+  badge.style.borderColor = category.color;
+  return badge;
+}
+
+function sortTasks(items) {
+  if (taskSort.value === 'priority') return items.sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority]);
+  if (taskSort.value === 'dueDate') return items.sort((a, b) =>
+    `${a.dueDate}T${a.dueTime || '18:00'}`.localeCompare(`${b.dueDate}T${b.dueTime || '18:00'}`));
+  return items;
+}
+
 function render() { //choisit les taches a afficher selon les filtres choisis
   list.replaceChildren();
   const activeCount = tasks.filter((task) => !task.done).length;
@@ -225,14 +277,24 @@ function render() { //choisit les taches a afficher selon les filtres choisis
   });
 
   let visible;
-  if (view === 'trash') visible = [...trash].reverse();
-  else if (view === 'todo') visible = tasks.filter((task) => !task.done);
-  else if (view === 'done') visible = tasks.filter((task) => task.done).sort((a, b) => (a.completedOrder || 0) - (b.completedOrder || 0));
-  else visible = [...tasks.filter((task) => !task.done), ...tasks.filter((task) => task.done).sort((a, b) => (a.completedOrder || 0) - (b.completedOrder || 0))];
+  const active = () => sortTasks(tasks.filter((task) => !task.done));
+  const completed = () => sortTasks(tasks.filter((task) => task.done).sort((a, b) => (a.completedOrder || 0) - (b.completedOrder || 0)));
+  if (view === 'trash') visible = sortTasks([...trash].reverse());
+  else if (view === 'todo') visible = active();
+  else if (view === 'done') visible = completed();
+  else visible = [...active(), ...completed()];
+
+  const query = taskSearch.value.trim().toLocaleLowerCase('fr');
+  visible = visible.filter((task) =>
+    (priorityFilter.value === 'all' || task.priority === priorityFilter.value) &&
+    (categoryFilter.value === 'all' || (categoryFilter.value === 'none' ? !task.categoryId : task.categoryId === categoryFilter.value)) &&
+    (!query || task.title.toLocaleLowerCase('fr').includes(query)));
 
   document.querySelector('#visible-count').textContent = `${visible.length} tâche${visible.length > 1 ? 's' : ''}`;
   document.querySelector('#empty-message').hidden = visible.length > 0;
-  document.querySelector('#empty-message').textContent = view === 'trash' ? 'La corbeille est vide.' : 'Aucune tâche dans cette vue.';
+  document.querySelector('#empty-message').textContent = query || priorityFilter.value !== 'all' || categoryFilter.value !== 'all'
+    ? 'Aucune tâche ne correspond à ces critères.'
+    : view === 'trash' ? 'La corbeille est vide.' : 'Aucune tâche dans cette vue.';
   for (const task of visible) list.append(renderTask(task));
 }
 
@@ -261,6 +323,8 @@ function renderTask(task) { // construit la carte de chaque tache
   const deadline = document.createElement('span');
   deadline.textContent = `${formatDate(task.dueDate)} · ${task.dueTime || '18:00'}`;
   meta.append(priority, deadline);
+  const category = categories.find((candidate) => candidate.id === task.categoryId);
+  if (category) meta.append(categoryBadge(category));
   if (task.done) {
     const status = document.createElement('span');
     status.textContent = 'Terminée';
@@ -345,6 +409,16 @@ function showEditForm(item, task) { //permet de faire des actions sur la tache (
   editTime.value = task.dueTime || '18:00';
   timeLabel.append(editTime);
   timeField.append(timeLabel);
+  const categoryField = document.createElement('div');
+  categoryField.className = 'field';
+  const categoryLabel = document.createElement('label');
+  categoryLabel.textContent = 'Catégorie';
+  const editCategory = document.createElement('select');
+  editCategory.add(new Option('Sans catégorie', ''));
+  for (const category of categories) editCategory.add(new Option(category.name, category.id));
+  editCategory.value = task.categoryId || '';
+  categoryLabel.append(editCategory);
+  categoryField.append(categoryLabel);
   row.append(priorityField, dateField, timeField);
   const editActions = document.createElement('div');
   editActions.className = 'edit-actions';
@@ -354,7 +428,7 @@ function showEditForm(item, task) { //permet de faire des actions sur la tache (
   saveButton.className = 'primary-button';
   saveButton.textContent = 'Enregistrer';
   editActions.append(saveButton);
-  edit.append(titleField, row, editActions);
+  edit.append(titleField, row, categoryField, editActions);
   edit.addEventListener('submit', (event) => {
     event.preventDefault();
     const title = titleInput.value.trim();
@@ -362,7 +436,7 @@ function showEditForm(item, task) { //permet de faire des actions sur la tache (
     if (!validDeadline(dateInput.value, editTime.value)) { message.textContent = 'Choisis une date et une heure futures.'; return; }
     message.textContent = '';
     closeCalendar();
-    updateTask(task, { title, priority: prioritySelect.value, dueDate: dateInput.value, dueTime: editTime.value });
+    updateTask(task, { title, priority: prioritySelect.value, dueDate: dateInput.value, dueTime: editTime.value, categoryId: editCategory.value });
   });
   titleInput.addEventListener('input', () => titleInput.setCustomValidity(''));
   item.append(edit);
@@ -436,7 +510,7 @@ form.addEventListener('submit', async (event) => {
   const title = form.elements.title.value.trim();
   if (!title) { message.textContent = 'Saisis un titre pour la tâche.'; form.elements.title.focus(); return; }
   if (!validDeadline(dateValue.value, timeInput.value)) { message.textContent = 'Choisis une date et une heure futures.'; return; }
-  tasks.push({ id: nextId++, title, priority: form.elements.priority.value, dueDate: dateValue.value, dueTime: timeInput.value, done: false, completedOrder: null });
+  tasks.push({ id: nextId++, title, priority: form.elements.priority.value, dueDate: dateValue.value, dueTime: timeInput.value, categoryId: categorySelect.value, done: false, completedOrder: null });
   message.textContent = '';
   await save();
   form.reset();
@@ -446,6 +520,31 @@ form.addEventListener('submit', async (event) => {
   view = 'all';
   render();
 });
+
+categoryForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const name = categoryForm.elements.categoryName.value.trim();
+  const color = categoryForm.elements.categoryColor.value;
+  const categoryMessage = document.querySelector('#category-message');
+  if (!name) { categoryMessage.textContent = 'Saisis un nom de catégorie.'; return; }
+  if (categories.some((category) => category.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'))) {
+    categoryMessage.textContent = 'Cette catégorie existe déjà.';
+    return;
+  }
+  if (!/^#[0-9a-f]{6}$/i.test(color)) { categoryMessage.textContent = 'Choisis une couleur valide.'; return; }
+  const id = `custom-${Array.from(crypto.getRandomValues(new Uint8Array(8)), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+  categories.push({ id, name, color });
+  renderCategories();
+  categorySelect.value = id;
+  categoryForm.reset();
+  categoryMessage.textContent = 'Catégorie créée.';
+  await save();
+  render();
+});
+
+for (const control of [priorityFilter, categoryFilter, taskSort]) control.addEventListener('change', render);
+taskSearch.addEventListener('input', render);
+renderCategories();
 
 function closeSidebar() {
   sidebar.classList.remove('open');
@@ -648,6 +747,8 @@ async function createAccount(username, password) { // vérifie le pseudonyme et 
   const legacy = localStorage.getItem(storageKey);
   tasks = [];
   trash = [];
+  categories = structuredClone(defaultCategories);
+  renderCategories();
   nextId = 1;
   nextCompletionOrder = 1;
   const importLegacy = legacy && !localStorage.getItem(accountStorageKey) &&
@@ -656,7 +757,7 @@ async function createAccount(username, password) { // vérifie le pseudonyme et 
   const master = await TaskFlowSecurity.newMasterKey();
   const passwordWrapper = await TaskFlowSecurity.wrapMaster(password, master.raw);
   const recovery = await TaskFlowSecurity.createRecovery(master.raw);
-  const data = await TaskFlowSecurity.encrypt(master.key, { tasks, trash });
+  const data = await TaskFlowSecurity.encrypt(master.key, { tasks, trash, categories });
   const createdAccount = { version: 2, username, ...passwordWrapper, recovery: recovery.wrapper, data, failedAttempts: 0, lockedUntil: 0 };
   activeAccountKey = accountKey(username);
   localStorage.setItem(activeAccountKey, JSON.stringify(createdAccount));
@@ -778,6 +879,12 @@ document.querySelector('#logout').addEventListener('click', async () => {
   activeAccountKey = null;
   tasks = [];
   trash = [];
+  categories = structuredClone(defaultCategories);
+  renderCategories();
+  taskSearch.value = '';
+  priorityFilter.value = 'all';
+  categoryFilter.value = 'all';
+  taskSort.value = 'default';
   closeCalendar();
   closeSidebar();
   showLogin();

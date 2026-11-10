@@ -48,8 +48,18 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 
 .primary-button { padding: 11px 18px; border: 0; border-radius: 11px; background: linear-gradient(135deg, #6489ef, #7e74de); box-shadow: 0 6px 17px #6b82d74d; color: white; font-weight: 650; }
 .primary-button:hover { filter: brightness(1.05); }
+.task-category-field { margin-top: 18px; }
+.category-section { display: grid; gap: 17px; margin-top: 22px; padding: 24px 28px; }
+.category-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.category-badge { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid; border-radius: 99px; color: #34425b; font-size: .75rem; font-weight: 700; }
+.category-form { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; align-items: end; gap: 12px; }
+.category-form .primary-button { min-height: 46px; }
+.color-field input { padding: 5px; cursor: pointer; }
+#category-message { min-height: 1.3em; margin: 0; color: #62748b; font-size: .83rem; }
 .tasks-section { margin-top: 38px; }
 .list-heading { margin-bottom: 18px; }
+.task-tools { display: grid; grid-template-columns: minmax(180px, 1.5fr) repeat(3, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 18px; }
+.task-tools input[type="search"] { appearance: none; }
 #visible-count { color: #7d899e; font-size: .83rem; }
 .task-list { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
 .task { padding: 17px 19px; border: 1px solid #ffffffdb; border-radius: 18px; background: #ffffffcc; box-shadow: 0 8px 25px #5b70901a; }
@@ -127,6 +137,7 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
 /*l 90 à 126 c'est connexion : carte de connexion, champs, critères du mot de passe, couleurs de la jauge et affichage du code de récupération*/
 
 @media (max-width: 780px) {
+  .task-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sidebar { position: fixed; z-index: 21; inset: 0 auto 0 0; width: min(280px, 82vw); transform: translateX(-105%); transition: transform .2s ease; }
   .sidebar.open { transform: translateX(0); }
   .sidebar-backdrop:not([hidden]) { position: fixed; z-index: 20; inset: 0; display: block; background: #1a284866; }
@@ -137,6 +148,10 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
   .local-badge { margin-left: auto; }
 }
 @media (max-width: 580px) {
+  .category-section { padding: 20px; }
+  .category-form { grid-template-columns: minmax(0, 1fr) 90px; }
+  .category-form .primary-button { grid-column: 1 / -1; }
+  .task-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .auth-card { padding: 24px; }
   .workspace { padding: 25px 14px 55px; }
   .page-header { flex-wrap: wrap; gap: 12px; }
@@ -150,5 +165,5 @@ h2 { margin-bottom: 0; font-size: 1.28rem; letter-spacing: -.035em; }
   .task { padding: 15px; }
   .edit-form { margin-left: 0; }
 }
-@media (max-width: 360px) { .form-row, .edit-form .form-row { grid-template-columns: 1fr; } .form-row .field:first-child { grid-column: auto; } }
+@media (max-width: 360px) { .form-row, .edit-form .form-row, .task-tools { grid-template-columns: 1fr; } .form-row .field:first-child { grid-column: auto; } }
 /*l 129 à 153 c'est scalability : adapte le menu et les formulaires aux tablettes et téléphones.*/

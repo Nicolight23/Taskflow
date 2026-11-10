@@ -75,11 +75,28 @@
             <div class="field"><label for="due-date">Échéance</label><button id="due-date" class="date-trigger" type="button" aria-haspopup="dialog" aria-expanded="false">Choisir une date ▦</button><input id="due-date-value" name="dueDate" type="hidden"></div>
             <div class="field"><label for="due-time">Heure</label><input id="due-time" name="dueTime" type="time" required value="18:00"></div>
           </div>
+          <div class="field task-category-field"><label for="task-category">Catégorie</label><select id="task-category" name="categoryId"></select></div>
           <div class="form-footer"><p id="message" role="alert"></p><button class="primary-button" type="submit">Ajouter la tâche →</button></div>
         </form>
       </section>
+      <section class="category-section glass-card" aria-labelledby="category-heading">
+        <div class="section-heading"><div><p class="eyebrow">ORGANISATION</p><h2 id="category-heading">Catégories</h2></div></div>
+        <div id="category-list" class="category-list" aria-label="Catégories disponibles"></div>
+        <form id="category-form" class="category-form">
+          <div class="field"><label for="category-name">Nouvelle catégorie</label><input id="category-name" name="categoryName" type="text" maxlength="32" placeholder="Ex. : Sport" required></div>
+          <div class="field color-field"><label for="category-color">Couleur</label><input id="category-color" name="categoryColor" type="color" value="#7b85d8"></div>
+          <button class="primary-button" type="submit">Créer la catégorie</button>
+        </form>
+        <p id="category-message" role="alert" aria-live="polite"></p>
+      </section>
       <section class="tasks-section" aria-labelledby="list-heading">
         <div class="list-heading"><div><p class="eyebrow" id="list-eyebrow">VUE D'ENSEMBLE</p><h2 id="list-heading">Tes tâches</h2></div><span id="visible-count">0 tâche</span></div>
+        <div class="task-tools glass-card" aria-label="Recherche et filtres des tâches">
+          <div class="field search-field"><label for="task-search">Rechercher</label><input id="task-search" type="search" placeholder="Mot-clé dans le titre"></div>
+          <div class="field"><label for="priority-filter">Priorité</label><select id="priority-filter"><option value="all">Toutes</option><option value="urgent">Urgent</option><option value="moyennement_urgent">Moyennement urgent</option><option value="pas_urgent">Pas urgent</option></select></div>
+          <div class="field"><label for="category-filter">Catégorie</label><select id="category-filter"></select></div>
+          <div class="field"><label for="task-sort">Trier par</label><select id="task-sort"><option value="default">Ordre d'origine</option><option value="priority">Priorité</option><option value="dueDate">Échéance</option></select></div>
+        </div>
         <p id="empty-message" class="empty-state glass-card">Aucune tâche pour le moment.</p>
         <ul id="task-list" class="task-list"></ul>
       </section>

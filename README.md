@@ -45,3 +45,9 @@ Les tâches sont chiffrées sur cet appareil. Le mot de passe ou le code de réc
 À la création du compte, un code de récupération est affiché une seule fois. Les comptes créés avant cette fonction reçoivent un code lors de leur prochaine connexion réussie. Conservez-le ailleurs que dans TaskFlow : le bouton « Mot de passe oublié ? » permet de choisir un nouveau mot de passe avec ce code. Après une récupération, l'ancien code est remplacé par un nouveau.
 
 Il n'y a ni serveur, ni synchronisation. Si le mot de passe et le code de récupération sont perdus, les tâches chiffrées ne peuvent pas être relues. Le blocage des tentatives est enregistré localement et peut être contourné par quelqu'un qui contrôle le navigateur ; ce n'est donc pas une authentification adaptée à un service en ligne ou à des données sensibles.
+
+## Organisation des tâches
+
+La vue des tâches propose une recherche dans les titres, un filtre de priorité, un filtre de catégorie et un tri par priorité ou par échéance. Dans « Toutes », les tâches à faire restent au-dessus des tâches terminées. Sans tri choisi, ces dernières gardent l'ordre dans lequel elles ont été cochées.
+
+Chaque tâche peut recevoir une catégorie. École, Perso et Projet sont proposées au départ. Le formulaire « Catégories » permet d'en créer d'autres avec un nom et une couleur. Les catégories et les tâches sont enregistrées ensemble dans le compte local. Les tâches déjà enregistrées restent sans catégorie tant qu'on ne les modifie pas.
