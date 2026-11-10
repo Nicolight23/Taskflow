@@ -268,6 +268,8 @@ function render() { //choisit les taches a afficher selon les filtres choisis
   document.querySelector('#view-heading').textContent = viewLabels[view][0];
   document.querySelector('#list-eyebrow').textContent = viewLabels[view][1];
   document.querySelector('#composer').hidden = view === 'trash';
+  document.querySelector('.category-section').hidden = view === 'trash';
+  document.querySelector('.task-tools').hidden = view === 'trash';
   document.querySelector('#view-description').textContent = view === 'trash' ? 'Récupère une tâche supprimée par erreur.' : 'Organise tes tâches et garde une vue claire sur la suite.';
   document.querySelectorAll('[data-view]').forEach((navButton) => {
     const selected = navButton.dataset.view === view;
@@ -279,20 +281,20 @@ function render() { //choisit les taches a afficher selon les filtres choisis
   let visible;
   const active = () => sortTasks(tasks.filter((task) => !task.done));
   const completed = () => sortTasks(tasks.filter((task) => task.done).sort((a, b) => (a.completedOrder || 0) - (b.completedOrder || 0)));
-  if (view === 'trash') visible = sortTasks([...trash].reverse());
+  if (view === 'trash') visible = [...trash].reverse();
   else if (view === 'todo') visible = active();
   else if (view === 'done') visible = completed();
   else visible = [...active(), ...completed()];
 
   const query = taskSearch.value.trim().toLocaleLowerCase('fr');
-  visible = visible.filter((task) =>
+  if (view !== 'trash') visible = visible.filter((task) =>
     (priorityFilter.value === 'all' || task.priority === priorityFilter.value) &&
     (categoryFilter.value === 'all' || (categoryFilter.value === 'none' ? !task.categoryId : task.categoryId === categoryFilter.value)) &&
     (!query || task.title.toLocaleLowerCase('fr').includes(query)));
 
   document.querySelector('#visible-count').textContent = `${visible.length} tâche${visible.length > 1 ? 's' : ''}`;
   document.querySelector('#empty-message').hidden = visible.length > 0;
-  document.querySelector('#empty-message').textContent = query || priorityFilter.value !== 'all' || categoryFilter.value !== 'all'
+  document.querySelector('#empty-message').textContent = view !== 'trash' && (query || priorityFilter.value !== 'all' || categoryFilter.value !== 'all')
     ? 'Aucune tâche ne correspond à ces critères.'
     : view === 'trash' ? 'La corbeille est vide.' : 'Aucune tâche dans cette vue.';
   for (const task of visible) list.append(renderTask(task));
